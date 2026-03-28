@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { Search } from "lucide-react";
 import { listCategories } from "@/services/category.service";
@@ -12,12 +13,25 @@ import { Loader } from "@/components/ui/Loader";
 import { cn } from "@/utils/cn";
 
 export default function ProductsPage() {
-  const [filters, setFilters] = useState({
+  const searchParams = useSearchParams();
+
+  const [filters, setFilters] = useState(() => ({
     search: "",
     categoryId: "",
     brand: "",
     maxPrice: 100000,
-  });
+  }));
+
+  useEffect(() => {
+    const categoryId = searchParams.get("categoryId") ?? "";
+    const search = searchParams.get("search") ?? "";
+
+    setFilters((current) => ({
+      ...current,
+      search,
+      categoryId,
+    }));
+  }, [searchParams]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],

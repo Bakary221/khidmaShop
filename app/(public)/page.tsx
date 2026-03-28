@@ -71,7 +71,7 @@ export default function HomePage() {
           {categories.map((category) => (
             <Link
               key={category.id}
-              href="/products"
+              href={`/products?categoryId=${category.id}`}
               className="flex w-[240px] shrink-0 items-center gap-4 rounded-[1.6rem] border border-black/10 bg-white p-3 transition hover:-translate-y-0.5 hover:border-black/20 hover:shadow-md sm:w-[280px]"
             >
               <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[1.2rem] border border-black/10 bg-black/5">

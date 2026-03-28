@@ -1,0 +1,19 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="50" x2="540" y2="550" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FBFF" />
+      <stop offset="1" stop-color="#D7E3EE" />
+    </linearGradient>
+    <linearGradient id="shoe" x1="150" y1="260" x2="460" y2="430" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#111111" />
+      <stop offset="1" stop-color="#4B4B4B" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="600" rx="48" fill="url(#bg)" />
+  <circle cx="470" cy="122" r="70" fill="#FFFFFF" fill-opacity="0.56" />
+  <circle cx="130" cy="470" r="92" fill="#87A0B8" fill-opacity="0.12" />
+  <path d="M146 362C202 332 258 292 298 248C334 292 386 330 456 366C484 380 498 404 500 430H120C122 392 130 376 146 362Z" fill="url(#shoe)" />
+  <path d="M128 430H500" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" />
+  <path d="M206 306H366" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.8" />
+  <path d="M228 274H346" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.5" />
+</svg>

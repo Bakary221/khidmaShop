@@ -1,0 +1,28 @@
+<svg width="900" height="1125" viewBox="0 0 900 1125" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="90" x2="780" y2="1020" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF3E9" />
+      <stop offset="1" stop-color="#E7D2C0" />
+    </linearGradient>
+    <linearGradient id="shirt" x1="320" y1="240" x2="580" y2="830" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#DFA56E" />
+      <stop offset="1" stop-color="#B97A43" />
+    </linearGradient>
+    <filter id="shadow" x="180" y="160" width="540" height="760" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="30" stdDeviation="26" flood-color="#5A2D07" flood-opacity="0.14" />
+    </filter>
+  </defs>
+  <rect width="900" height="1125" fill="url(#bg)" />
+  <circle cx="710" cy="190" r="130" fill="#FFFFFF" fill-opacity="0.5" />
+  <circle cx="180" cy="900" r="190" fill="#B87D4B" fill-opacity="0.12" />
+  <rect x="130" y="120" width="640" height="885" rx="48" fill="#FFFFFF" fill-opacity="0.35" stroke="#111111" stroke-opacity="0.05" />
+  <g filter="url(#shadow)">
+    <path d="M352 258L450 326L548 258L620 342L570 412V820H330V412L280 342L352 258Z" fill="url(#shirt)" />
+    <path d="M388 300L450 360L512 300" stroke="#FFF6EE" stroke-width="10" stroke-linecap="round" />
+    <path d="M450 326V412" stroke="#FFF6EE" stroke-width="10" stroke-linecap="round" />
+    <circle cx="450" cy="444" r="10" fill="#FFF6EE" />
+    <circle cx="450" cy="492" r="10" fill="#FFF6EE" fill-opacity="0.78" />
+    <circle cx="450" cy="540" r="10" fill="#FFF6EE" fill-opacity="0.6" />
+    <rect x="382" y="610" width="136" height="16" rx="8" fill="#FFF6EE" fill-opacity="0.65" />
+  </g>
+</svg>

@@ -1,0 +1,32 @@
+<svg width="900" height="1125" viewBox="0 0 900 1125" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="120" y1="80" x2="780" y2="1040" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF8EE" />
+      <stop offset="1" stop-color="#F1E5D6" />
+    </linearGradient>
+    <linearGradient id="shirt" x1="330" y1="230" x2="570" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#161616" />
+      <stop offset="1" stop-color="#3A3A3A" />
+    </linearGradient>
+    <linearGradient id="shine" x1="370" y1="250" x2="530" y2="640" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity="0.32" />
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0" />
+    </linearGradient>
+    <filter id="shadow" x="190" y="170" width="520" height="720" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="28" stdDeviation="24" flood-color="#000000" flood-opacity="0.14" />
+    </filter>
+  </defs>
+  <rect width="900" height="1125" fill="url(#bg)" />
+  <circle cx="710" cy="180" r="130" fill="#FFFFFF" fill-opacity="0.45" />
+  <circle cx="180" cy="900" r="180" fill="#D9C0A5" fill-opacity="0.14" />
+  <rect x="140" y="120" width="620" height="885" rx="52" fill="#FFFFFF" fill-opacity="0.4" stroke="#111111" stroke-opacity="0.06" />
+  <g filter="url(#shadow)">
+    <path d="M355 238L450 305L545 238L620 318L568 410V800H332V410L280 318L355 238Z" fill="url(#shirt)" />
+    <path d="M450 305V410" stroke="#F5E7D6" stroke-width="12" stroke-linecap="round" />
+    <path d="M372 290L450 372L528 290" stroke="#F5E7D6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+    <rect x="375" y="425" width="150" height="18" rx="9" fill="#F9F3EB" fill-opacity="0.75" />
+    <rect x="375" y="476" width="150" height="18" rx="9" fill="#F9F3EB" fill-opacity="0.55" />
+    <rect x="375" y="527" width="150" height="18" rx="9" fill="#F9F3EB" fill-opacity="0.4" />
+    <path d="M334 392H566" stroke="url(#shine)" stroke-width="90" stroke-linecap="round" opacity="0.28" />
+  </g>
+</svg>

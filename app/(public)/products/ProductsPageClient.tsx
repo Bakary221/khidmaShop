@@ -9,6 +9,7 @@ import { listCategories } from "@/services/category.service";
 import { listProductBrands, listProducts } from "@/services/product.service";
 import { ProductFilters } from "@/components/product/ProductFilters";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { Pagination } from "@/components/admin/Pagination";
 import { Loader } from "@/components/ui/Loader";
 import { cn } from "@/utils/cn";
 
@@ -22,6 +23,9 @@ export function ProductsPageClient() {
     maxPrice: 100000,
   }));
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+
   useEffect(() => {
     const categoryId = searchParams.get("categoryId") ?? "";
     const search = searchParams.get("search") ?? "";
@@ -31,15 +35,16 @@ export function ProductsPageClient() {
       search,
       categoryId,
     }));
+    setCurrentPage(1);
   }, [searchParams]);
 
   const { data: categories = [] } = useQuery({
     queryKey: ["categories"],
-    queryFn: listCategories,
+    queryFn: () => listCategories(),
   });
   const { data: brands = [] } = useQuery({
     queryKey: ["brands"],
-    queryFn: listProductBrands,
+    queryFn: () => listProductBrands(),
   });
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["products", filters],
@@ -50,6 +55,15 @@ export function ProductsPageClient() {
     const total = products.length;
     return `${total} produit${total > 1 ? "s" : ""}`;
   }, [products.length]);
+
+  const totalPages = useMemo(() => Math.ceil(products.length / itemsPerPage), [products.length, itemsPerPage]);
+  
+  const paginatedProducts = useMemo(() => {
+    return products.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [products, currentPage, itemsPerPage]);
 
   const categoryImages: Record<string, string> = {
     "cat-men": "/assets/categories/fashion.jpg",
@@ -157,7 +171,18 @@ export function ProductsPageClient() {
 
       <ProductFilters categories={categories} brands={brands} value={filters} onChange={setFilters} showSearch={false} />
 
-      {isLoading ? <Loader className="py-10" /> : <ProductGrid products={products} />}
+      {isLoading ? (
+        <Loader className="py-10" />
+      ) : (
+        <div className="space-y-6">
+          <ProductGrid products={paginatedProducts} />
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={setCurrentPage}
+          />
+        </div>
+      )}
     </div>
   );
 }

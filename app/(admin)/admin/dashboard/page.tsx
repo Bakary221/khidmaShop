@@ -3,14 +3,17 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import Image from "next/image";
-import { ArrowRight, BadgeCheck, Box, ClipboardList, Users2 } from "lucide-react";
+import { ArrowRight, Box, ClipboardList, Users2, TrendingUp, ShoppingCart, DollarSign } from "lucide-react";
+import Link from "next/link";
 import { listProducts, listProductStats } from "@/services/product.service";
 import { listOrderStats, listOrders } from "@/services/order.service";
 import { listUserStats } from "@/services/user.service";
 import { listCategories } from "@/services/category.service";
 import { formatCurrency, formatDate } from "@/utils/format";
 import { Loader } from "@/components/ui/Loader";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminCard } from "@/components/admin/AdminCard";
+import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { statusTone } from "@/utils/identity";
 
 export default function AdminDashboardPage() {
@@ -21,142 +24,193 @@ export default function AdminDashboardPage() {
     queryKey: ["admin-products-sample"],
     queryFn: () => listProducts(),
   });
-  const { data: orders = [], isLoading: ordersLoading } = useQuery({ queryKey: ["admin-orders-sample"], queryFn: listOrders });
-  const { data: categories = [] } = useQuery({ queryKey: ["admin-categories-sample"], queryFn: listCategories });
-  const revenue = useMemo(() => orders.reduce((sum, order) => sum + order.total, 0), [orders]);
+  const { data: orders = [], isLoading: ordersLoading } = useQuery({ 
+    queryKey: ["admin-orders-sample"], 
+    queryFn: listOrders 
+  });
+  const { data: categories = [] } = useQuery({ 
+    queryKey: ["admin-categories-sample"], 
+    queryFn: () => listCategories() 
+  });
 
-  const cards = [
-    { label: "Produits", value: productStats?.total ?? 0, icon: Box, note: "Catalogue actif" },
-    { label: "Commandes", value: orderStats?.total ?? 0, icon: ClipboardList, note: "Commandes totales" },
-    { label: "Utilisateurs", value: userStats?.total ?? 0, icon: Users2, note: "Comptes enregistrés" },
-    { label: "Catégories", value: categories.length, icon: BadgeCheck, note: "Collections visibles" },
-  ];
+  const revenue = useMemo(() => orders.reduce((sum, order) => sum + (order.total || 0), 0), [orders]);
+  const pendingOrders = orders.filter((o) => o.status === "en_attente").length;
+  const deliveredOrders = orders.filter((o) => o.status === "livree").length;
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        eyebrow="Dashboard"
-        title="Vue d'ensemble de Khidma Shop"
-        description="Un aperçu clair du catalogue, des commandes et des clients pour piloter la boutique au quotidien."
+    <div className="space-y-4">
+      {/* Header */}
+      <AdminHeader
+        icon={<TrendingUp className="h-5 w-5" />}
+        title="Dashboard"
+        description="Vue d'ensemble de votre boutique en temps réel"
+        breadcrumbs={[{ label: "Accueil" }]}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {cards.map((card) => {
-          const Icon = card.icon;
-
-          return (
-            <div
-              key={card.label}
-              className="rounded-[1.75rem] border border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fbfbfb_100%)] p-4 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm text-black/55">{card.label}</p>
-                  <p className="mt-2 text-3xl font-semibold tracking-tight">{card.value}</p>
-                </div>
-                <div className="rounded-2xl border border-black/10 bg-white p-3 shadow-sm">
-                  <Icon className="h-5 w-5" />
-                </div>
-              </div>
-              <p className="mt-3 text-xs uppercase tracking-[0.22em] text-black/45">{card.note}</p>
-            </div>
-          );
-        })}
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <AdminStatCard
+          label="Chiffre d'affaires"
+          value={formatCurrency(revenue)}
+          icon={<DollarSign className="h-5 w-5" />}
+          color="green"
+          trend={{ value: 12, isPositive: true }}
+        />
+        <AdminStatCard
+          label="Commandes"
+          value={orderStats?.total ?? 0}
+          icon={<ShoppingCart className="h-5 w-5" />}
+          color="blue"
+          trend={{ value: 8, isPositive: true }}
+        />
+        <AdminStatCard
+          label="Clients"
+          value={userStats?.total ?? 0}
+          icon={<Users2 className="h-5 w-5" />}
+          color="purple"
+          trend={{ value: 5, isPositive: true }}
+        />
+        <AdminStatCard
+          label="Produits"
+          value={productStats?.total ?? 0}
+          icon={<Box className="h-5 w-5" />}
+          color="orange"
+        />
       </div>
 
-      <div className="rounded-[2rem] border border-black/10 bg-[linear-gradient(135deg,#111111,#2b2f37)] p-5 text-white shadow-sm sm:p-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <p className="text-xs uppercase tracking-[0.3em] text-white/55">Lecture rapide</p>
-            <h2 className="mt-2 text-2xl font-semibold tracking-tight">Les commandes récentes reflètent la demande actuelle.</h2>
-            <p className="mt-2 text-sm leading-6 text-white/70">
-              Les meilleures pièces de la boutique restent la chemise, les sneakers et les produits électroniques les plus sobres.
-            </p>
+      {/* Quick Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AdminCard hover={false}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-black/60 font-medium">En attente</p>
+              <p className="text-3xl font-bold mt-2">{pendingOrders}</p>
+            </div>
+            <div className="text-4xl font-bold text-yellow-500/20">!</div>
           </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p className="text-xs text-white/55">Chiffre</p>
-              <p className="mt-1 text-lg font-semibold">{formatCurrency(revenue)}</p>
+        </AdminCard>
+        <AdminCard hover={false}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-black/60 font-medium">Livrées</p>
+              <p className="text-3xl font-bold mt-2">{deliveredOrders}</p>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p className="text-xs text-white/55">En attente</p>
-              <p className="mt-1 text-lg font-semibold">{orderStats?.pending ?? 0}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
-              <p className="text-xs text-white/55">Livrées</p>
-              <p className="mt-1 text-lg font-semibold">{orderStats?.delivered ?? 0}</p>
-            </div>
+            <div className="text-4xl font-bold text-green-500/20">✓</div>
           </div>
+        </AdminCard>
+        <AdminCard hover={false}>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-black/60 font-medium">Catégories</p>
+              <p className="text-3xl font-bold mt-2">{categories.length}</p>
+            </div>
+            <div className="text-4xl font-bold text-blue-500/20">#</div>
+          </div>
+        </AdminCard>
+      </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Orders Section */}
+        <div className="lg:col-span-2">
+          <AdminCard>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-black">Commandes récentes</h3>
+                <p className="text-sm text-black/60 mt-1">Suivi des dernières commandes</p>
+              </div>
+              <Link 
+                href="/admin/orders"
+                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+              >
+                Voir tout
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {ordersLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader />
+              </div>
+            ) : orders.length > 0 ? (
+              <div className="space-y-3">
+                {orders.slice(0, 5).map((order) => (
+                  <div
+                    key={order.id}
+                    className="flex items-center justify-between p-4 rounded-lg border border-black/10 hover:bg-black/2.5 transition-colors"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-black truncate">{order.customerName}</p>
+                      <div className="flex gap-4 mt-1 text-sm text-black/60">
+                        <span>{order.items.length} article(s)</span>
+                        <span>{formatDate(order.createdAt)}</span>
+                      </div>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="font-bold text-black">{formatCurrency(order.total)}</p>
+                      <p className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${statusTone(order.status)}`}>
+                        {order.status}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-black/50">Aucune commande</p>
+            )}
+          </AdminCard>
+        </div>
+
+        {/* Products Section */}
+        <div>
+          <AdminCard>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-black">Produits</h3>
+                <p className="text-sm text-black/60 mt-1">Derniers ajouts</p>
+              </div>
+              <Link 
+                href="/admin/products"
+                className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1"
+              >
+                Voir tout
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+
+            {productsLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader />
+              </div>
+            ) : products.length > 0 ? (
+              <div className="space-y-3">
+                {products.slice(0, 4).map((product) => (
+                  <Link key={product.id} href={`/admin/products?id=${product.id}`}>
+                    <div className="flex items-center gap-3 p-3 rounded-lg border border-black/10 hover:bg-black/2.5 cursor-pointer transition-colors">
+                      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-black/10">
+                        <Image 
+                          src={product.images[0]} 
+                          alt={product.name} 
+                          fill 
+                          className="object-cover" 
+                          sizes="48px"
+                        />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium text-sm truncate text-black">{product.name}</p>
+                        <p className="text-xs text-black/60">{formatCurrency(product.price)}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center py-8 text-black/50">Aucun produit</p>
+            )}
+          </AdminCard>
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <section className="rounded-[2rem] border border-black/10 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-black/45">Commandes</p>
-              <h2 className="text-lg font-semibold tracking-tight">Récentes</h2>
-            </div>
-            <ArrowRight className="h-4 w-4 text-black/40" />
-          </div>
-          <div className="mt-4 space-y-3">
-            {ordersLoading ? (
-              <Loader />
-            ) : (
-              orders.slice(0, 4).map((order) => (
-                <div
-                  key={order.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl border border-black/10 p-3 text-sm transition hover:border-black/20 hover:bg-black/5"
-                >
-                  <div className="min-w-0">
-                    <p className="font-medium">{order.customerName}</p>
-                    <p className="text-black/55">{formatDate(order.createdAt)}</p>
-                    <p className="mt-1 text-xs text-black/45">{order.items.length} article(s)</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold">{formatCurrency(order.total)}</p>
-                    <p className={`mt-2 inline-flex rounded-full border px-3 py-1 text-[11px] uppercase tracking-[0.18em] ${statusTone(order.status)}`}>
-                      {order.status}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-
-        <section className="rounded-[2rem] border border-black/10 bg-white p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.25em] text-black/45">Produits</p>
-              <h2 className="text-lg font-semibold tracking-tight">Les plus visibles</h2>
-            </div>
-            <ArrowRight className="h-4 w-4 text-black/40" />
-          </div>
-          <div className="mt-4 space-y-3">
-            {productsLoading ? (
-              <Loader />
-            ) : (
-              products.slice(0, 4).map((product) => (
-                <div
-                  key={product.id}
-                  className="flex items-center gap-3 rounded-2xl border border-black/10 p-3 text-sm transition hover:border-black/20 hover:bg-black/5"
-                >
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-black/5">
-                    <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="56px" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{product.name}</p>
-                    <p className="text-black/55">{product.brand}</p>
-                    <p className="mt-1 text-xs text-black/45">{product.categoryName}</p>
-                  </div>
-                  <p className="font-semibold">{formatCurrency(product.price)}</p>
-                </div>
-              ))
-            )}
-          </div>
-        </section>
-      </div>
     </div>
   );
 }

@@ -4,9 +4,9 @@ import { Product } from "@/types/product";
 import { User } from "@/types/user";
 
 export const categoriesSeed: Category[] = [
-  { id: "cat-men", name: "Vêtements homme", slug: "vetements-homme" },
-  { id: "cat-shoes", name: "Chaussures", slug: "chaussures" },
-  { id: "cat-tech", name: "Électronique", slug: "electronique" },
+  { id: "cat-men", name: "Vêtements homme", slug: "vetements-homme", active: true },
+  { id: "cat-shoes", name: "Chaussures", slug: "chaussures", active: true },
+  { id: "cat-tech", name: "Électronique", slug: "electronique", active: true },
 ];
 
 export const productsSeed: Product[] = [
@@ -28,6 +28,7 @@ export const productsSeed: Product[] = [
     featured: true,
     stock: 24,
     rating: 4.8,
+    active: true,
   },
   {
     id: "prd-002",
@@ -47,6 +48,7 @@ export const productsSeed: Product[] = [
     featured: true,
     stock: 18,
     rating: 4.7,
+    active: true,
   },
   {
     id: "prd-003",
@@ -66,6 +68,7 @@ export const productsSeed: Product[] = [
     featured: true,
     stock: 13,
     rating: 4.6,
+    active: true,
   },
   {
     id: "prd-004",
@@ -84,6 +87,7 @@ export const productsSeed: Product[] = [
     featured: false,
     stock: 32,
     rating: 4.5,
+    active: true,
   },
   {
     id: "prd-005",
@@ -102,6 +106,7 @@ export const productsSeed: Product[] = [
     featured: false,
     stock: 11,
     rating: 4.4,
+    active: true,
   },
 ];
 
@@ -148,7 +153,7 @@ export const ordersSeed: Order[] = [
     address: "Cocody, Abidjan",
     latitude: 5.3509,
     longitude: -4.0031,
-    status: "confirmed",
+    status: "confirmee",
     createdAt: "2026-03-25T10:20:00.000Z",
     total: 50000,
     items: [
@@ -168,7 +173,7 @@ export const ordersSeed: Order[] = [
     address: "Plateau, Abidjan",
     latitude: 5.3202,
     longitude: -4.0165,
-    status: "pending",
+    status: "en_attente",
     createdAt: "2026-03-26T14:45:00.000Z",
     total: 77000,
     items: [

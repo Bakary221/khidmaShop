@@ -15,52 +15,36 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   if (isLoginPage) {
-    return <div className="min-h-screen bg-[linear-gradient(180deg,#f8f7f4_0%,#ffffff_60%,#fafafa_100%)] text-black">{children}</div>;
+    return <>{children}</>;
   }
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f8f7f4_0%,#ffffff_28%,#fafafa_100%)] text-black md:flex">
-      <div className="sticky top-0 z-30 flex items-center justify-between border-b border-black/10 bg-white/85 px-4 py-3 backdrop-blur-md md:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileNavOpen(true)}
-          className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium shadow-sm"
-        >
-          <Menu className="h-4 w-4" />
-          Menu
-        </button>
-        <p className="text-sm font-semibold tracking-tight">Khidma Admin</p>
+    <div className="h-screen bg-white text-black overflow-hidden">
+      {/* Mobile sidebar */}
+      <AdminSidebar isOpen={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:fixed md:top-0 md:left-0 md:z-50 md:h-screen md:w-72 md:block">
+        <AdminSidebar />
       </div>
 
-      {mobileNavOpen ? (
-        <button
-          type="button"
-          aria-label="Fermer le menu"
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
-          onClick={() => setMobileNavOpen(false)}
-        />
-      ) : null}
-
-      <div
-        className={`fixed inset-y-0 left-0 z-50 w-[86vw] max-w-sm transform transition duration-300 md:static md:z-auto md:w-auto md:translate-x-0 ${
-          mobileNavOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
-        }`}
-      >
-        <div className="h-full shadow-2xl md:shadow-none">
-          <div className="flex h-14 items-center justify-end border-b border-black/10 bg-white px-4 md:hidden">
-            <button
-              type="button"
-              onClick={() => setMobileNavOpen(false)}
-              className="rounded-full border border-black/10 p-2 text-black/70"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <AdminSidebar />
+      <header className="fixed top-0 left-0 right-0 z-40 flex h-11 items-center justify-between border-b border-black/15 bg-white px-4 text-black md:pl-72">
+        <div className="flex items-center gap-2">
+          {/* Mobile hamburger menu */}
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="rounded-lg border border-black/10 p-2 hover:bg-black/5 md:hidden"
+          >
+            <Menu className="h-4 w-4" />
+          </button>
+          <div className="text-sm font-semibold uppercase tracking-wide">Admin Panel</div>
         </div>
-      </div>
+      </header>
 
-      <main className="flex-1 px-4 py-4 pb-8 md:px-6 md:py-6 lg:px-8">{children}</main>
+      <main className="absolute top-11 left-0 right-0 bottom-0 md:left-72 md:top-11 overflow-y-auto">
+        <div className="pt-2 px-6 md:px-6 mx-auto max-w-8xl xl:max-w-[1440px]">{children}</div>
+      </main>
     </div>
   );
 }

@@ -13,12 +13,14 @@ export type Product = {
   featured: boolean;
   stock: number;
   rating: number;
+  active: boolean;
 };
 
 export type Category = {
   id: string;
   name: string;
   slug: string;
+  active: boolean;
 };
 
 export type ProductFilters = {
@@ -26,4 +28,5 @@ export type ProductFilters = {
   categoryId?: string;
   brand?: string;
   maxPrice?: number;
+  includeInactive?: boolean;
 };

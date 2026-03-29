@@ -2,130 +2,155 @@
 
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Mail, ShieldCheck } from "lucide-react";
-import { AdminTable } from "@/components/admin/AdminTable";
-import { Modal } from "@/components/ui/Modal";
-import { Loader } from "@/components/ui/Loader";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { Users2, Phone, Shield } from "lucide-react";
 import { listUsers } from "@/services/user.service";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminCard } from "@/components/admin/AdminCard";
+import { AdminDataDisplay } from "@/components/admin/AdminDataDisplay";
 import { formatDate } from "@/utils/format";
-import { User } from "@/types/user";
-import { getInitials, statusTone } from "@/utils/identity";
 
 export default function AdminUsersPage() {
-  const { data: users = [], isLoading } = useQuery({ queryKey: ["admin-users"], queryFn: listUsers });
-  const [selected, setSelected] = useState<User | null>(null);
+  const { data: users = [], isLoading } = useQuery({ 
+    queryKey: ["admin-users"], 
+    queryFn: () => listUsers() 
+  });
 
-  const columns = useMemo(
-    () => [
-      { header: "Utilisateur" },
-      { header: "Téléphone" },
-      { header: "Rôle" },
-      { header: "Créé" },
-    ],
-    [],
+  const stats = useMemo(() => {
+    return {
+      total: users.length,
+      admins: users.filter(u => u.role === "admin").length,
+      clients: users.filter(u => u.role === "client").length,
+    };
+  }, [users]);
+
+  const roleColors = {
+    admin: "bg-black text-white border border-black/20",
+    client: "bg-white text-black border border-black/20",
+  };
+
+  const renderUserCard = (user: any) => (
+    <div key={user.id} className="p-4 rounded-lg border border-black/20 bg-white hover:bg-black/5 transition-colors">
+      <div className="flex items-start justify-between mb-3">
+        <div>
+          <p className="font-semibold text-black">{user.name}</p>
+          <p className="text-xs text-black/60">{user.phone}</p>
+        </div>
+        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${roleColors[user.role as keyof typeof roleColors]}`}>
+          {user.role === "admin" ? (
+            <Shield className="h-3 w-3" />
+          ) : null}
+          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+        </span>
+      </div>
+      <div className="text-xs text-black/60">
+        Inscrit le {formatDate(user.createdAt)}
+      </div>
+    </div>
+  );
+
+  const renderUserTable = (users: any[]) => (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-black/10">
+            <th className="text-left py-3 px-4 font-semibold text-sm text-black">Utilisateur</th>
+            <th className="text-left py-3 px-4 font-semibold text-sm text-black hidden md:table-cell">Email</th>
+            <th className="text-left py-3 px-4 font-semibold text-sm text-black hidden lg:table-cell">Téléphone</th>
+            <th className="text-left py-3 px-4 font-semibold text-sm text-black">Rôle</th>
+            <th className="text-left py-3 px-4 font-semibold text-sm text-black hidden sm:table-cell">Date d&apos;inscription</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-black/10">
+          {users.map((user) => (
+            <tr key={user.id} className="hover:bg-black/2.5 transition-colors">
+              <td className="py-4 px-4">
+                <div>
+                  <p className="font-medium text-black">{user.name}</p>
+                  <p className="text-xs text-black/50 md:hidden">{user.phone}</p>
+                </div>
+              </td>
+              <td className="py-4 px-4 hidden md:table-cell">
+                <div className="flex items-center gap-2 text-sm text-black">
+                  <Phone className="h-4 w-4 text-black/40" />
+                  <span>{user.phone}</span>
+                </div>
+              </td>
+              <td className="py-4 px-4 hidden lg:table-cell">
+                <div className="flex items-center gap-2 text-sm text-black">
+                  <Phone className="h-4 w-4 text-black/40" />
+                  {user.phone || "—"}
+                </div>
+              </td>
+              <td className="py-4 px-4">
+                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${roleColors[user.role as keyof typeof roleColors]}`}>
+                  {user.role === "admin" ? (
+                    <Shield className="h-3 w-3" />
+                  ) : null}
+                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                </span>
+              </td>
+              <td className="py-4 px-4 text-sm text-black/60 hidden sm:table-cell">
+                {formatDate(user.createdAt)}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        eyebrow="Utilisateurs"
-        title="Clients et administrateurs"
-        description="Suivez les comptes connectés à Khidma Shop et gardez une vue claire sur les profils et les rôles."
+    <div className="space-y-4">
+      {/* Header */}
+      <AdminHeader
+        icon={<Users2 className="h-5 w-5" />}
+        title="Utilisateurs"
+        description="Gérez les clients et administrateurs"
+        breadcrumbs={[{ label: "Accueil" }, { label: "Utilisateurs" }]}
       />
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[1.75rem] border border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fbfbfb_100%)] p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-black/45">
-            <Mail className="h-4 w-4" />
-            Clients
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <AdminCard hover={false}>
+          <div>
+            <p className="text-sm text-black/60 font-medium">Total</p>
+            <p className="text-3xl font-bold mt-2 text-black">{stats.total}</p>
+            <p className="text-xs text-black/40 mt-2">Utilisateurs enregistrés</p>
           </div>
-          <p className="mt-2 text-3xl font-semibold">{users.filter((user) => user.role === "client").length}</p>
-        </div>
-        <div className="rounded-[1.75rem] border border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fbfbfb_100%)] p-4 shadow-sm">
-          <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-black/45">
-            <ShieldCheck className="h-4 w-4" />
-            Admins
+        </AdminCard>
+        <AdminCard hover={false}>
+          <div>
+            <p className="text-sm text-black/60 font-medium">Administrateurs</p>
+            <p className="text-3xl font-bold mt-2 text-black">{stats.admins}</p>
+            <p className="text-xs text-black/40 mt-2">Comptes administrateur</p>
           </div>
-          <p className="mt-2 text-3xl font-semibold">{users.filter((user) => user.role === "admin").length}</p>
-        </div>
+        </AdminCard>
+        <AdminCard hover={false}>
+          <div>
+            <p className="text-sm text-black/60 font-medium">Clients</p>
+            <p className="text-3xl font-bold mt-2 text-black">{stats.clients}</p>
+            <p className="text-xs text-black/40 mt-2">Clients actifs</p>
+          </div>
+        </AdminCard>
       </div>
 
-      {isLoading ? (
-        <Loader className="py-10" />
-      ) : (
-        <AdminTable
-          columns={columns}
-          rows={users}
-          renderRow={(user) => (
-            <>
-              <td className="px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-black text-xs font-semibold text-white">
-                    {getInitials(user.name)}
-                  </div>
-                  <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-xs text-black/45">{user.address ?? "-"}</p>
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-4 text-sm">{user.phone}</td>
-              <td className="px-4 py-4 text-sm">{user.role}</td>
-              <td className="px-4 py-4 text-sm text-black/65">{formatDate(user.createdAt)}</td>
-            </>
+      {/* Users List */}
+      <AdminCard>
+        <h3 className="text-lg font-bold text-black mb-6">Liste des utilisateurs</h3>
+        <AdminDataDisplay
+          data={users}
+          isLoading={isLoading}
+          itemsPerPage={8}
+          defaultView="list"
+          emptyMessage="Aucun utilisateur trouvé"
+          renderGrid={(users) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {users.map((user) => renderUserCard(user))}
+            </div>
           )}
-          renderMobileRow={(user) => (
-            <button onClick={() => setSelected(user)} className="card-base w-full p-4 text-left shadow-sm">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-black/10 bg-black text-xs font-semibold text-white">
-                    {getInitials(user.name)}
-                  </div>
-                  <div>
-                    <p className="font-medium">{user.name}</p>
-                    <p className="text-sm text-black/45">{user.phone}</p>
-                  </div>
-                </div>
-                <span className={`rounded-full border px-3 py-1 text-xs capitalize ${statusTone(user.role)}`}>{user.role}</span>
-              </div>
-            </button>
-          )}
+          renderList={(users) => renderUserTable(users)}
         />
-      )}
-
-      <Modal open={Boolean(selected)} onClose={() => setSelected(null)} title={selected?.name ?? "Utilisateur"}>
-        {selected ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fafafa_100%)] p-4">
-              <p className="text-xs uppercase tracking-[0.25em] text-black/45">Profil</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <span className={`rounded-full border px-3 py-1 text-xs capitalize ${statusTone(selected.role)}`}>{selected.role}</span>
-                <span className="rounded-full border border-black/10 px-3 py-1 text-xs text-black/55">
-                  Créé le {formatDate(selected.createdAt)}
-                </span>
-              </div>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-black/10 p-3">
-                <p className="text-xs text-black/45">Téléphone</p>
-                <p className="mt-1 font-medium">{selected.phone}</p>
-              </div>
-              <div className="rounded-2xl border border-black/10 p-3">
-                <p className="text-xs text-black/45">Rôle</p>
-                <p className="mt-1 font-medium">{selected.role}</p>
-              </div>
-              <div className="rounded-2xl border border-black/10 p-3 sm:col-span-2">
-                <p className="text-xs text-black/45">Adresse</p>
-                <p className="mt-1 font-medium">
-                  <MapPin className="mr-1 inline h-4 w-4" />
-                  {selected.address ?? "-"}
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </Modal>
+      </AdminCard>
     </div>
   );
 }

@@ -14,48 +14,56 @@ const navItems = [
   { href: "/admin/users", label: "Utilisateurs", icon: Users },
 ];
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
 
   return (
-    <aside className="h-full border-b border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fafafa_100%)] md:h-screen md:w-80 md:border-b-0 md:border-r">
-      <div className="space-y-4 border-b border-black/10 px-4 py-4 md:px-5 md:py-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-black bg-black text-sm font-semibold text-white shadow-sm">
-              K
-            </span>
-            <div>
-              <p className="text-[11px] uppercase tracking-[0.35em] text-black/45">KHIDMA SHOP</p>
-              <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
-            </div>
+    <>
+      {/* Mobile backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 md:hidden"
+          onClick={onClose}
+        />
+      )}
+
+      <aside className={cn(
+        "h-full border-r border-black/20 bg-white px-4 py-5 flex flex-col transition-transform duration-300 ease-in-out md:w-72 md:h-screen md:overflow-auto md:translate-x-0",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        "fixed left-0 top-0 z-50 w-full sm:w-72 md:relative md:z-auto"
+      )}>
+        {/* Mobile close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-lg border border-black/10 p-1 hover:bg-black/5 md:hidden"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="mb-6 flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg border border-black bg-black text-sm font-bold text-white">K</span>
+          <div>
+            <p className="text-xs uppercase tracking-wide text-black/60">KHIDMA SHOP</p>
+            <h1 className="text-lg font-semibold text-black">Admin</h1>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              logout();
-              router.push("/auth");
-            }}
-            className="rounded-full border border-black/10 p-2 text-black/70 transition hover:bg-black/5 md:hidden"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
         </div>
 
-        <div className="rounded-[1.5rem] border border-black/10 bg-[linear-gradient(135deg,#111111,#2b2f37)] px-4 py-4 text-white shadow-sm">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="h-4 w-4" />
-            <p className="text-xs uppercase tracking-[0.3em] text-white/60">Accès sécurisé</p>
-          </div>
-          <p className="mt-2 text-sm font-medium">{user?.name ?? "Administrateur"}</p>
-          <p className="mt-1 text-xs text-white/65">Gestion boutique, commandes, catalogue et clients.</p>
-        </div>
+      <div className="mb-5 rounded-lg border border-black/20 bg-white p-3">
+        <p className="text-xs uppercase tracking-wide text-black/60">Connecté comme</p>
+        <p className="text-base font-medium text-black">{user?.name ?? "Administrateur"}</p>
+        <p className="text-xs text-black/50">Gestion de produit & commandes</p>
       </div>
 
-      <nav className="grid gap-2 p-3 md:flex md:flex-col md:p-4">
+      <nav className="space-y-2">
         {navItems.map((item) => {
           const Icon = item.icon;
           const active = pathname === item.href;
@@ -65,18 +73,12 @@ export function AdminSidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                "group relative flex items-center gap-3 rounded-2xl border px-4 py-3 text-sm transition",
+                "flex items-center gap-3 rounded-lg border px-3 py-2 text-sm transition",
                 active
-                  ? "border-black bg-black text-white shadow-sm"
-                  : "border-black/10 bg-white text-black/70 hover:border-black/20 hover:bg-black/5 hover:text-black",
+                  ? "border-black bg-black text-white"
+                  : "border-black/10 bg-white text-black hover:bg-black hover:text-white",
               )}
             >
-              <span
-                className={cn(
-                  "absolute left-0 top-3 h-6 w-1 rounded-r-full transition",
-                  active ? "bg-[#d4a24f]" : "bg-transparent group-hover:bg-black/20",
-                )}
-              />
               <Icon className="h-4 w-4" />
               <span>{item.label}</span>
             </Link>
@@ -84,19 +86,19 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      <div className="hidden p-4 md:block">
+      <div className="mt-auto">
         <button
           type="button"
           onClick={() => {
             logout();
             router.push("/auth");
           }}
-          className="btn-base w-full justify-start border border-black/10 bg-white px-4 py-3 text-left"
+          className="w-full rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          Déconnexion
+          <LogOut className="inline h-4 w-4 mr-2" /> Déconnexion
         </button>
       </div>
     </aside>
+    </>
   );
 }

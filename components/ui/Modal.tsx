@@ -25,7 +25,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 24 }}
-            className={cn("flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_80px_rgba(15,15,20,0.18)]", className)}
+            className={cn("flex max-h-[90vh] w-full max-w-sm sm:max-w-2xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_80px_rgba(15,15,20,0.18)]", className)}
             onClick={(event) => event.stopPropagation()}
           >
             <div className="border-b border-black/10 px-4 py-4 sm:px-6">

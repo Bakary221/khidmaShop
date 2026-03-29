@@ -33,6 +33,8 @@ export async function listProducts(filters?: ProductFilters) {
   const search = filters?.search?.trim().toLowerCase();
 
   return products.filter((product) => {
+    if (!filters?.includeInactive && !product.active) return false;
+
     const matchesSearch =
       !search ||
       product.name.toLowerCase().includes(search) ||
@@ -62,6 +64,7 @@ export async function createProduct(input: Omit<Product, "id" | "slug"> & { slug
     ...input,
     id: createId("prd"),
     slug: input.slug ?? input.name.toLowerCase().replace(/\s+/g, "-"),
+    active: input.active ?? true,
   };
   products = [product, ...products];
   persistProducts(products);
@@ -84,6 +87,14 @@ export async function updateProduct(id: string, input: Omit<Product, "id" | "slu
   return products.find((product) => product.id === id) ?? null;
 }
 
+export async function toggleProductActive(id: string, active: boolean) {
+  await delay(350);
+  products = products.map((product) => (product.id === id ? { ...product, active } : product));
+  persistProducts(products);
+  return products.find((product) => product.id === id) ?? null;
+}
+
+
 export async function deleteProduct(id: string) {
   await delay(400);
   products = products.filter((product) => product.id !== id);
@@ -103,6 +114,13 @@ export async function listProductStats() {
     featured: products.filter((product) => product.featured).length,
     categories: categoriesSeed.length,
   };
+}
+
+export async function setProductsActiveByCategory(categoryId: string, active: boolean) {
+  await delay(250);
+  products = products.map((product) => (product.categoryId === categoryId ? { ...product, active } : product));
+  persistProducts(products);
+  return products.filter((product) => product.categoryId === categoryId);
 }
 
 export function getProductSnapshot() {

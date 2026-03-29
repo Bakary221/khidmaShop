@@ -18,11 +18,11 @@ export default function HomePage() {
   };
   const { data, isLoading } = useQuery({
     queryKey: ["featured-products"],
-    queryFn: listFeaturedProducts,
+    queryFn: () => listFeaturedProducts(),
   });
   const { data: categories = [] } = useQuery({
     queryKey: ["home-categories"],
-    queryFn: listCategories,
+    queryFn: () => listCategories(),
   });
 
   return (

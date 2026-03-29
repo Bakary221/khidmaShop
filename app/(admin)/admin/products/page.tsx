@@ -2,36 +2,26 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import type { ElementType, ReactNode } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  BadgePercent,
-  CheckSquare,
-  ImagePlus,
-  Layers3,
-  Package,
-  Palette,
-  Pencil,
   Plus,
-  ShoppingBag,
-  Tag,
-  TextCursorInput,
+  Pencil,
   Trash2,
+  Box,
   Star,
-  Boxes,
   Upload,
   X,
-  RefreshCw,
 } from "lucide-react";
-import { AdminTable } from "@/components/admin/AdminTable";
 import { Modal } from "@/components/ui/Modal";
-import { Loader } from "@/components/ui/Loader";
-import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { createProduct, deleteProduct, listProducts, updateProduct } from "@/services/product.service";
+import { AdminHeader } from "@/components/admin/AdminHeader";
+import { AdminCard } from "@/components/admin/AdminCard";
+import { AdminButton } from "@/components/admin/AdminButton";
+import { AdminInput } from "@/components/admin/AdminInput";
+import { AdminDataDisplay } from "@/components/admin/AdminDataDisplay";
+import { createProduct, deleteProduct, listProducts, updateProduct, toggleProductActive } from "@/services/product.service";
 import { listCategories } from "@/services/category.service";
 import { formatCurrency } from "@/utils/format";
 import { Product } from "@/types/product";
-import { cn } from "@/utils/cn";
 import { useToast } from "@/hooks/useToast";
 
 const emptyForm = {
@@ -47,6 +37,7 @@ const emptyForm = {
   featured: false,
   stock: 0,
   rating: 4.5,
+  active: true,
 };
 
 type ProductForm = typeof emptyForm;
@@ -60,152 +51,49 @@ function readFileAsDataUrl(file: File) {
   });
 }
 
-type FieldProps = {
-  label: string;
-  icon: ElementType;
-  className?: string;
-  hint?: string;
-  children: ReactNode;
-};
-
-function Field({ label, icon: Icon, className, hint, children }: FieldProps) {
-  return (
-    <label className={cn("block space-y-2", className)}>
-      <span className="flex items-center gap-2 text-sm font-medium">
-        <Icon className="h-4 w-4" />
-        {label}
-      </span>
-      {hint ? <p className="text-xs leading-5 text-black/45">{hint}</p> : null}
-      {children}
-    </label>
-  );
-}
-
-type ProductPreviewProps = {
-  image?: string;
-  name: string;
-  brand: string;
-  categoryName: string;
-  rating: number;
-  price: number;
-};
-
-function ProductPreviewCard({ image, name, brand, categoryName, rating, price }: ProductPreviewProps) {
-  return (
-    <article className="card-base overflow-hidden">
-      <div className="block">
-        <div className="relative aspect-[3/4] overflow-hidden bg-black/5 sm:aspect-[4/5]">
-          {image ? (
-            <img
-              src={image}
-              alt={name || "Aperçu produit"}
-              className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-black/45">
-              Ajoute une image pour voir l’aperçu exact de la carte produit.
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="space-y-3 p-3 sm:p-4">
-        <div className="space-y-1">
-          <p className="text-xs uppercase tracking-[0.24em] text-black/45">{brand || "Marque"}</p>
-          <div className="block truncate text-sm font-medium leading-5 sm:text-[15px]">{name || "Nom du produit"}</div>
-          <div className="flex min-w-0 items-center gap-2 text-[11px] text-black/55 sm:text-xs">
-            <Star className="h-3.5 w-3.5 fill-black" />
-            <span className="shrink-0">{rating.toFixed(1)}</span>
-            <span className="shrink-0">•</span>
-            <span className="min-w-0 truncate">{categoryName || "Catégorie"}</span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold leading-none sm:text-base">{formatCurrency(price || 0)}</p>
-          <button type="button" className="btn-base w-full bg-black px-3 py-3 text-xs text-white sm:w-auto sm:self-start sm:px-4 sm:py-2">
-            <ShoppingBag className="mr-2 h-3.5 w-3.5" />
-            Ajouter
-          </button>
-        </div>
-      </div>
-    </article>
-  );
-}
-
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
-  const toast = useToast();
   const { data: products = [], isLoading } = useQuery({
     queryKey: ["admin-products"],
     queryFn: () => listProducts(),
   });
-  const { data: categories = [] } = useQuery({ queryKey: ["admin-categories"], queryFn: listCategories });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["admin-categories"],
+    queryFn: () => listCategories({ includeInactive: true }),
+  });
+
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
-  const [form, setForm] = useState(emptyForm);
-  const previewImage = form.images[0]?.trim() || "";
+  const [form, setForm] = useState<ProductForm>(emptyForm);
+  const [uploadingImages, setUploadingImages] = useState<boolean>(false);
 
-  const resetForm = () => {
+  const reset = () => {
     setEditing(null);
     setForm(emptyForm);
   };
 
-  const openCreate = () => {
-    resetForm();
-    setOpen(true);
-  };
-
-  const openEdit = (product: Product) => {
-    setEditing(product);
-    setForm({
-      name: product.name,
-      price: product.price,
-      images: product.images.slice(0, 4).length ? product.images.slice(0, 4) : [""],
-      categoryId: product.categoryId,
-      categoryName: product.categoryName,
-      brand: product.brand,
-      description: product.description,
-      sizes: product.sizes.join(","),
-      colors: product.colors.join(","),
-      featured: product.featured,
-      stock: product.stock,
-      rating: product.rating,
-    });
-    setOpen(true);
+  const handleClose = () => {
+    setOpen(false);
+    reset();
   };
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const images = form.images.map((item) => item.trim()).filter(Boolean).slice(0, 4);
-      if (!images[0]) {
-        throw new Error("L'image principale est obligatoire.");
-      }
-
-      const category = categories.find((item) => item.id === form.categoryId);
       const payload = {
-        name: form.name,
-        price: Number(form.price),
-        images,
-        categoryId: form.categoryId,
-        categoryName: category?.name ?? form.categoryName,
-        brand: form.brand,
-        description: form.description,
-        sizes: form.sizes.split(",").map((item) => item.trim()).filter(Boolean),
-        colors: form.colors.split(",").map((item) => item.trim()).filter(Boolean),
-        featured: form.featured,
-        stock: Number(form.stock),
-        rating: Number(form.rating),
+        ...form,
+        sizes: form.sizes.split(",").map(s => s.trim()).filter(Boolean),
+        colors: form.colors.split(",").map(c => c.trim()).filter(Boolean),
       };
       return editing ? updateProduct(editing.id, payload) : createProduct(payload);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       await queryClient.invalidateQueries({ queryKey: ["products"] });
-      setOpen(false);
-      resetForm();
+      toast.success("Produit", editing ? "mis à jour" : "créé");
+      handleClose();
     },
-    onError: (err: Error) => toast.error("Produit non enregistré", err.message),
   });
 
   const deleteMutation = useMutation({
@@ -213,391 +101,414 @@ export default function AdminProductsPage() {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       await queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Produit supprimé");
     },
   });
 
-  const columns = useMemo(
-    () => [
-      { header: "Produit" },
-      { header: "Catégorie" },
-      { header: "Prix" },
-      { header: "Stock" },
-      { header: "Actions" },
-    ],
-    [],
-  );
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
+      await toggleProductActive(id, active);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
 
-  const updateImage = async (index: number, file?: File | null) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      toast.error("Format invalide", "Choisis une vraie image.");
-      return;
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    setUploadingImages(true);
+
+    try {
+      const urls: string[] = [];
+      for (const file of Array.from(e.target.files)) {
+        const url = await readFileAsDataUrl(file);
+        urls.push(url);
+      }
+      setForm((prev) => ({
+        ...prev,
+        images: [...prev.images.filter(i => i), ...urls],
+      }));
+    } finally {
+      setUploadingImages(false);
     }
-
-    const nextImage = await readFileAsDataUrl(file);
-    setForm((current) => {
-      const next = [...current.images];
-      while (next.length < 1) next.push("");
-      next[index] = nextImage;
-      return { ...current, images: next.slice(0, 4) };
-    });
   };
 
   const removeImage = (index: number) => {
-    setForm((current) => {
-      const next = [...current.images];
-      if (index === 0) {
-        next[0] = "";
-      } else {
-        next.splice(index, 1);
-      }
-      if (!next.length) next.push("");
-      return { ...current, images: next.slice(0, 4) };
-    });
+    setForm((prev) => ({
+      ...prev,
+      images: prev.images.filter((_, i) => i !== index),
+    }));
   };
 
-  const appendImage = async (file?: File | null) => {
-    if (!file) return;
-    const filledCount = form.images.filter(Boolean).length;
-    if (filledCount >= 4) {
-      toast.error("Maximum atteint", "Un produit peut avoir au maximum 4 images.");
-      return;
-    }
+  // Pagination logic removed - handled by AdminDataDisplay
 
-    const nextImage = await readFileAsDataUrl(file);
-    setForm((current) => {
-      const next = [...current.images];
-      const firstEmpty = next.findIndex((item) => !item);
-      const targetIndex = firstEmpty === -1 ? next.length : firstEmpty;
-      if (targetIndex >= 4) return current;
-      next[targetIndex] = nextImage;
-      return { ...current, images: next.slice(0, 4) };
-    });
+  const openModal = (product?: Product) => {
+    if (product) {
+      setEditing(product);
+      setForm({
+        name: product.name,
+        price: product.price,
+        images: product.images,
+        categoryId: product.categoryId,
+        categoryName: product.categoryName,
+        brand: product.brand,
+        description: product.description,
+        sizes: product.sizes?.join(",") || "S,M,L",
+        colors: product.colors?.join(",") || "Noir,Blanc",
+        featured: product.featured,
+        stock: product.stock || 0,
+        rating: product.rating || 4.5,
+        active: product.active,
+      });
+    } else {
+      reset();
+    }
+    setOpen(true);
   };
 
   return (
-    <div className="space-y-6">
-      <AdminPageHeader
-        eyebrow="Produits"
-        title="Catalogue Khidma Shop"
-        description="Ajoutez, modifiez et organisez les produits de la boutique avec leurs images, tailles, couleurs et catégories."
-        action={
-          <button onClick={openCreate} className="btn-base bg-black px-4 py-3 text-white">
-            <Plus className="mr-2 h-4 w-4" />
-            Ajouter un produit
-          </button>
-        }
-      />
-
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-[1.75rem] border border-black/10 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.25em] text-black/45">Produits</p>
-          <p className="mt-2 text-3xl font-semibold">{products.length}</p>
-        </div>
-        <div className="rounded-[1.75rem] border border-black/10 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.25em] text-black/45">Catégories</p>
-          <p className="mt-2 text-3xl font-semibold">{categories.length}</p>
-        </div>
-        <div className="rounded-[1.75rem] border border-black/10 bg-white p-4 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.25em] text-black/45">Vedettes</p>
-          <p className="mt-2 text-3xl font-semibold">{products.filter((product) => product.featured).length}</p>
-        </div>
-      </div>
-
-      <div className="rounded-[2rem] border border-black/10 bg-[linear-gradient(135deg,#111111,#2d3138)] px-4 py-4 text-white shadow-sm">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-[0.3em] text-white/55">Gestion</p>
-            <h2 className="text-lg font-semibold">Visuels, tailles et couleurs des produits</h2>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-white/70">
-            <ShoppingBag className="h-4 w-4" />
-            Boutique cohérente avec le client
-          </div>
-        </div>
-      </div>
-
-      {isLoading ? (
-        <Loader className="py-10" />
-      ) : (
-        <AdminTable
-          columns={columns}
-          rows={products}
-          renderRow={(product) => (
-            <>
-              <td className="px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-black/5">
-                    <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="48px" />
-                  </div>
-                  <div>
-                    <p className="font-medium">{product.name}</p>
-                    <p className="text-xs text-black/55">{product.brand}</p>
-                  </div>
-                </div>
-              </td>
-              <td className="px-4 py-4 text-sm text-black/65">{product.categoryName}</td>
-              <td className="px-4 py-4 text-sm font-medium">{formatCurrency(product.price)}</td>
-              <td className="px-4 py-4 text-sm text-black/65">
-                <span className="inline-flex rounded-full border border-black/10 px-3 py-1 text-xs">{product.stock}</span>
-              </td>
-              <td className="px-4 py-4">
-                <div className="flex items-center gap-2">
-                  <button onClick={() => openEdit(product)} className="rounded-full border border-black/10 p-2 transition hover:bg-black/5">
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => deleteMutation.mutate(product.id)} className="rounded-full border border-black/10 p-2 transition hover:bg-black/5">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </td>
-            </>
-          )}
-          renderMobileRow={(product) => (
-            <div className="card-base overflow-hidden p-4 shadow-sm">
-              <div className="flex items-start gap-3">
-                <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-black/5">
-                  <Image src={product.images[0]} alt={product.name} fill className="object-cover" sizes="64px" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="font-medium">{product.name}</p>
-                  <p className="mt-1 text-sm text-black/55">{product.brand}</p>
-                  <p className="mt-1 text-xs text-black/45">{product.categoryName}</p>
-                </div>
-                <p className="font-semibold">{formatCurrency(product.price)}</p>
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <span className="rounded-full border border-black/10 px-3 py-1 text-xs text-black/55">Stock {product.stock}</span>
-                <div className="flex gap-2">
-                  <button onClick={() => openEdit(product)} className="rounded-full border border-black/10 p-2 transition hover:bg-black/5">
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button onClick={() => deleteMutation.mutate(product.id)} className="rounded-full border border-black/10 p-2 transition hover:bg-black/5">
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <AdminHeader
+          icon={<Box className="h-6 w-6" />}
+          title="Produits"
+          description="Gérez le catalogue de votre boutique"
+          breadcrumbs={[{ label: "Accueil" }, { label: "Produits" }]}
         />
-      )}
+        <AdminButton onClick={() => openModal()} className="h-fit">
+          <Plus className="h-4 w-4" />
+          Ajouter
+        </AdminButton>
+      </div>
 
-      <Modal
-        open={open}
-        title={editing ? "Modifier le produit" : "Ajouter un produit"}
-        onClose={() => {
-          setOpen(false);
-          resetForm();
-        }}
-        className="max-w-6xl"
-      >
-        <div className="grid gap-5 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fcfcfc_100%)] p-4">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-black/45">
-                <Package className="h-4 w-4" />
-                Informations principales
-              </div>
-              <p className="mt-2 text-sm text-black/55">Remplis les champs essentiels pour publier un produit propre et cohérent.</p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Nom du produit" icon={Package} hint="Choisis un nom clair et vendeur." className="sm:col-span-2">
-                <input
-                  className="input-base"
-                  placeholder="Chemise Oxford Premium"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                />
-              </Field>
-
-              <Field label="Prix" icon={BadgePercent} hint="En francs CFA ou ta devise locale.">
-                <input
-                  className="input-base"
-                  type="number"
-                  placeholder="18000"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
-                />
-              </Field>
-
-              <Field label="Stock" icon={Boxes} hint="Quantité disponible en boutique.">
-                <input
-                  className="input-base"
-                  type="number"
-                  placeholder="24"
-                  value={form.stock}
-                  onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
-                />
-              </Field>
-
-              <Field label="Catégorie" icon={Layers3} hint="Relie le produit au bon univers." className="sm:col-span-2">
-                <select className="input-base" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })}>
-                  <option value="">Choisir une catégorie</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-
-              <Field label="Marque" icon={Tag} hint="Nom de la marque ou de la collection.">
-                <input
-                  className="input-base"
-                  placeholder="Khidma"
-                  value={form.brand}
-                  onChange={(e) => setForm({ ...form, brand: e.target.value })}
-                />
-              </Field>
-
-              <Field label="Note" icon={Star} hint="Ex: 4.5 pour un rendu crédible.">
-                <input
-                  className="input-base"
-                  type="number"
-                  step="0.1"
-                  placeholder="4.5"
-                  value={form.rating}
-                  onChange={(e) => setForm({ ...form, rating: Number(e.target.value) })}
-                />
-              </Field>
-
-              <div className="sm:col-span-2 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2 text-sm font-medium">
-                      <ImagePlus className="h-4 w-4" />
-                      Images du produit
-                    </div>
-                    <p className="mt-1 text-xs text-black/45">Maximum 4 images. La première est obligatoire.</p>
-                  </div>
-                  <label className="btn-base cursor-pointer border border-black/10 bg-white px-4 py-3 text-sm">
-                    <Upload className="mr-2 h-4 w-4" />
-                    Ajouter une image
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => appendImage(e.target.files?.[0])} />
-                  </label>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {Array.from({ length: 4 }).map((_, index) => {
-                    const value = form.images[index]?.trim() || "";
-                    const isMain = index === 0;
-
-                    return (
-                      <div key={index} className="rounded-3xl border border-black/10 bg-[linear-gradient(180deg,#ffffff_0%,#fafafa_100%)] p-3">
-                        <div className="mb-2 flex items-center justify-between gap-2">
-                          <p className="text-xs uppercase tracking-[0.22em] text-black/45">{isMain ? "Image principale" : `Image ${index + 1}`}</p>
-                          <span className="rounded-full border border-black/10 px-2 py-1 text-[10px] uppercase tracking-[0.18em] text-black/45">
-                            {isMain ? "Obligatoire" : "Optionnelle"}
-                          </span>
+      {/* Products Section */}
+      <AdminCard>
+        <div className="space-y-6">
+          <AdminDataDisplay
+            data={products}
+            isLoading={isLoading}
+            itemsPerPage={8}
+            defaultView="grid"
+            emptyMessage="Aucun produit trouvé"
+            renderGrid={(products) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="rounded-lg border border-black/10 overflow-hidden hover:shadow-lg transition-shadow"
+                  >
+                    {/* Product Image */}
+                    <div className="relative h-48 bg-black/5 overflow-hidden">
+                      {product.images?.[0] ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-black/20">
+                          <Box className="h-10 w-10" />
                         </div>
+                      )}
+                      <div className="absolute top-2 right-2 space-y-2">
+                        {product.featured && (
+                          <div className="bg-yellow-400 text-black px-2 py-1 rounded text-xs font-bold">
+                            Featured
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                        <div className="relative aspect-[4/5] overflow-hidden rounded-2xl border border-black/10 bg-black/5">
-                          {value ? (
-                            <>
-                              <img src={value} alt={`Aperçu ${index + 1}`} className="h-full w-full object-cover" />
-                              <div className="absolute inset-0 bg-black/0 transition hover:bg-black/20">
-                                <div className="absolute inset-x-3 bottom-3 flex gap-2">
-                                  <label className="btn-base flex-1 cursor-pointer bg-white px-3 py-2 text-xs text-black shadow-sm">
-                                    <RefreshCw className="mr-2 h-3.5 w-3.5" />
-                                    Remplacer
-                                    <input type="file" accept="image/*" className="hidden" onChange={(e) => updateImage(index, e.target.files?.[0])} />
-                                  </label>
-                                  <button
-                                    type="button"
-                                    onClick={() => removeImage(index)}
-                                    className="rounded-full bg-white p-2 text-black shadow-sm transition hover:bg-black hover:text-white"
-                                    aria-label={`Supprimer l'image ${index + 1}`}
-                                  >
-                                    <X className="h-4 w-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <label className="flex h-full cursor-pointer flex-col items-center justify-center gap-2 text-center text-sm text-black/45">
-                              <Upload className="h-5 w-5" />
-                              <span>Importer une image</span>
-                              <input type="file" accept="image/*" className="hidden" onChange={(e) => updateImage(index, e.target.files?.[0])} />
-                            </label>
-                          )}
+                    {/* Product Info */}
+                    <div className="p-4">
+                      <div className="mb-3">
+                        <p className="text-sm text-black/60">{product.categoryName}</p>
+                        <h3 className="font-bold text-black line-clamp-2">{product.name}</h3>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <p className="font-bold text-lg text-black">{formatCurrency(product.price)}</p>
+                        <div className="flex items-center gap-1">
+                          <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+                          <span className="text-sm font-medium text-black">{product.rating}</span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+
+                      <div className="flex items-center justify-between mb-4 text-xs">
+                        <span className={`px-2 py-1 rounded-full font-medium ${product.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                          {product.active ? "Actif" : "Inactif"}
+                        </span>
+                        <span className="text-black/60">{product.stock || 0} en stock</span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openModal(product)}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-black text-white rounded-lg font-medium text-sm hover:bg-black/90 transition-colors"
+                        >
+                          <Pencil className="h-4 w-4" />
+                          Éditer
+                        </button>
+                        <button
+                          onClick={() => deleteMutation.mutate(product.id)}
+                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium text-sm transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Suppr.
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
+            )}
+            renderList={(products) => (
+              <div className="space-y-4">
+                {products.map((product) => (
+                  <div
+                    key={product.id}
+                    className="flex items-center gap-4 p-4 rounded-lg border border-black/10 hover:bg-black/2.5 transition-colors"
+                  >
+                    <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-black/10">
+                      {product.images?.[0] ? (
+                        <Image
+                          src={product.images[0]}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="h-full flex items-center justify-center text-black/20">
+                          <Box className="h-6 w-6" />
+                        </div>
+                      )}
+                    </div>
 
-              <Field label="Tailles" icon={TextCursorInput} hint="Sépare par des virgules.">
-                <input
-                  className="input-base"
-                  placeholder="S, M, L, XL"
-                  value={form.sizes}
-                  onChange={(e) => setForm({ ...form, sizes: e.target.value })}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-semibold text-black truncate">{product.name}</h3>
+                          <p className="text-sm text-black/60">{product.categoryName}</p>
+                          <div className="flex items-center gap-4 mt-1 text-sm">
+                            <span className="font-medium text-black">{formatCurrency(product.price)}</span>
+                            <span className="text-black/60">{product.stock || 0} en stock</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${product.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                              {product.active ? "Actif" : "Inactif"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2 ml-4">
+                          <button
+                            onClick={() => openModal(product)}
+                            className="px-3 py-2 bg-black text-white rounded-lg font-medium text-sm hover:bg-black/90 transition-colors"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteMutation.mutate(product.id)}
+                            className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium text-sm transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          />
+        </div>
+      </AdminCard>
+
+      {/* Modal */}
+      {open && (
+        <Modal
+          open={open}
+          onClose={handleClose}
+          title={editing ? "Éditer le produit" : "Ajouter un produit"}
+          className="max-w-sm sm:max-w-3xl"
+        >
+          <div className="space-y-5">
+            {/* Basic Info */}
+            <div>
+              <h3 className="font-semibold text-black mb-3">Informations générales</h3>
+              <div className="space-y-4">
+                <AdminInput
+                  label="Nom du produit"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="Ex: T-shirt Premium"
+                  required
                 />
-              </Field>
-
-              <Field label="Couleurs" icon={Palette} hint="Sépare par des virgules.">
-                <input
-                  className="input-base"
-                  placeholder="Noir, Blanc"
-                  value={form.colors}
-                  onChange={(e) => setForm({ ...form, colors: e.target.value })}
+                <AdminInput
+                  label="Marque"
+                  value={form.brand}
+                  onChange={(e) => setForm({ ...form, brand: e.target.value })}
+                  placeholder="Ex: Nike"
                 />
-              </Field>
+                <AdminInput
+                  label="Catégorie"
+                  value={form.categoryId}
+                  onChange={(e) => {
+                    const cat = categories.find(c => c.id === e.target.value);
+                    setForm({
+                      ...form,
+                      categoryId: e.target.value,
+                      categoryName: cat?.name || "",
+                    });
+                  }}
+                  options={categories.map(c => ({ label: c.name, value: c.id }))}
+                />
+              </div>
+            </div>
 
-              <Field label="Description" icon={CheckSquare} hint="Une description courte aide à vendre." className="sm:col-span-2">
-                <textarea
-                  className="input-base min-h-28"
-                  rows={4}
-                  placeholder="Donnez une description courte et vendeuse du produit."
+            {/* Pricing & Stock */}
+            <div>
+              <h3 className="font-semibold text-black mb-3">Prix et stock</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <AdminInput
+                  label="Prix"
+                  type="number"
+                  value={form.price}
+                  onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) })}
+                  placeholder="0.00"
+                  min={0}
+                />
+                <AdminInput
+                  label="Stock"
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) })}
+                  placeholder="0"
+                  min={0}
+                />
+              </div>
+            </div>
+
+            {/* Details */}
+            <div>
+              <h3 className="font-semibold text-black mb-3">Détails</h3>
+              <div className="space-y-4">
+                <AdminInput
+                  label="Description"
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Description du produit..."
+                  textarea
                 />
-              </Field>
+                <AdminInput
+                  label="Tailles disponibles"
+                  value={form.sizes}
+                  onChange={(e) => setForm({ ...form, sizes: e.target.value })}
+                  placeholder="S,M,L,XL"
+                  helperText="Séparées par des virgules"
+                />
+                <AdminInput
+                  label="Couleurs disponibles"
+                  value={form.colors}
+                  onChange={(e) => setForm({ ...form, colors: e.target.value })}
+                  placeholder="Noir,Blanc,Bleu"
+                  helperText="Séparées par des virgules"
+                />
+              </div>
+            </div>
 
-              <label className="flex items-center gap-3 rounded-2xl border border-black/10 bg-black/[0.015] px-4 py-3 sm:col-span-2">
-                <input type="checkbox" checked={form.featured} onChange={(e) => setForm({ ...form, featured: e.target.checked })} />
-                <div>
-                  <p className="text-sm font-medium">Produit vedette</p>
-                  <p className="text-xs text-black/45">Mettre ce produit en avant sur la home.</p>
-                </div>
-              </label>
+            {/* Images */}
+            <div>
+              <h3 className="font-semibold text-black mb-3">Images</h3>
+              <div className="space-y-3">
+                {form.images.map((img, i) => (
+                  img && (
+                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-black/10">
+                      <Image
+                        src={img}
+                        alt={`Preview ${i}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(i)}
+                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-4 w-4 text-white" />
+                      </button>
+                    </div>
+                  )
+                ))}
+                <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-black/20 rounded-lg cursor-pointer hover:border-black/40 transition-colors">
+                  <div className="text-center">
+                    <Upload className="h-6 w-6 mx-auto text-black/40 mb-2" />
+                    <span className="text-sm font-medium text-black">Ajouter des images</span>
+                  </div>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    disabled={uploadingImages}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+            </div>
 
-              <button onClick={() => saveMutation.mutate()} className="btn-base sm:col-span-2 bg-black px-4 py-3 text-white">
-                {saveMutation.isPending ? "Sauvegarde..." : "Enregistrer"}
+            {/* Rating & Featured */}
+            <div>
+              <h3 className="font-semibold text-black mb-3">Options</h3>
+              <div className="space-y-4">
+                <AdminInput
+                  label="Note"
+                  type="number"
+                  value={form.rating}
+                  onChange={(e) => setForm({ ...form, rating: parseFloat(e.target.value) })}
+                  min={0}
+                  max={5}
+                />
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.featured}
+                    onChange={(e) => setForm({ ...form, featured: e.target.checked })}
+                    className="w-4 h-4 rounded border-black/20"
+                  />
+                  <span className="text-sm font-medium text-black">En avant (Featured)</span>
+                </label>
+                <label className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(e) => setForm({ ...form, active: e.target.checked })}
+                    className="w-4 h-4 rounded border-black/20"
+                  />
+                  <span className="text-sm font-medium text-black">Produit actif</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleClose}
+                className="flex-1 px-4 py-2 rounded-lg border border-black/20 text-black hover:bg-black/5 font-medium transition-colors"
+              >
+                Annuler
               </button>
+              <AdminButton
+                onClick={() => saveMutation.mutate()}
+                loading={saveMutation.isPending}
+                className="flex-1"
+              >
+                {editing ? "Mettre à jour" : "Créer"}
+              </AdminButton>
             </div>
           </div>
-
-          <div className="space-y-4">
-            <div className="rounded-3xl border border-black/10 bg-[linear-gradient(180deg,#111111,#262a31)] p-4 text-white shadow-sm">
-              <p className="text-xs uppercase tracking-[0.3em] text-white/55">Aperçu</p>
-              <div className="mt-4 rounded-3xl bg-white text-black shadow-[0_18px_50px_rgba(0,0,0,0.15)]">
-                <ProductPreviewCard
-                  image={previewImage}
-                  name={form.name}
-                  brand={form.brand}
-                  categoryName={
-                    form.categoryId ? categories.find((item) => item.id === form.categoryId)?.name ?? "Catégorie" : "Catégorie"
-                  }
-                  rating={Number(form.rating) || 0}
-                  price={Number(form.price) || 0}
-                />
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white p-4 shadow-sm">
-              <p className="text-xs uppercase tracking-[0.25em] text-black/45">Conseils</p>
-              <div className="mt-3 space-y-3 text-sm text-black/65">
-                <p>Utilise des images locales nettes pour garder le catalogue rapide et cohérent.</p>
-                <p>Limite le nombre de couleurs et de tailles pour ne garder que les vraies variantes disponibles.</p>
-                <p>Garde une description courte: elle doit rassurer, pas raconter tout le produit.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </Modal>
+        </Modal>
+      )}
     </div>
   );
 }

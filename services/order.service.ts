@@ -35,7 +35,7 @@ export async function createOrder(input: {
     address: input.address,
     latitude: input.latitude ?? null,
     longitude: input.longitude ?? null,
-    status: "pending",
+    status: "en_attente",
     createdAt: new Date().toISOString(),
     items: input.items,
     total,
@@ -55,9 +55,9 @@ export async function listOrderStats() {
   await delay(200);
   return {
     total: orders.length,
-    pending: orders.filter((order) => order.status === "pending").length,
-    confirmed: orders.filter((order) => order.status === "confirmed").length,
-    delivered: orders.filter((order) => order.status === "delivered").length,
+    pending: orders.filter((order) => order.status === "en_attente").length,
+    confirmed: orders.filter((order) => order.status === "confirmee").length,
+    delivered: orders.filter((order) => order.status === "livree").length,
   };
 }
 

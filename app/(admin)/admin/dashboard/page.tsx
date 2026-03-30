@@ -9,7 +9,7 @@ import { listProducts, listProductStats } from "@/services/product.service";
 import { listOrderStats, listOrders } from "@/services/order.service";
 import { listUserStats } from "@/services/user.service";
 import { listCategories } from "@/services/category.service";
-import { formatCurrency, formatDate } from "@/utils/format";
+import { formatCurrency, formatDate, orderStatusLabel } from "@/utils/format";
 import { Loader } from "@/components/ui/Loader";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminCard } from "@/components/admin/AdminCard";
@@ -34,8 +34,8 @@ export default function AdminDashboardPage() {
   });
 
   const revenue = useMemo(() => orders.reduce((sum, order) => sum + (order.total || 0), 0), [orders]);
-  const pendingOrders = orders.filter((o) => o.status === "en_attente").length;
-  const deliveredOrders = orders.filter((o) => o.status === "livree").length;
+  const pendingOrders = orders.filter((o) => o.status === "PENDING").length;
+  const deliveredOrders = orders.filter((o) => o.status === "DELIVERED").length;
 
   return (
     <div className="space-y-4">
@@ -148,8 +148,8 @@ export default function AdminDashboardPage() {
                     </div>
                     <div className="text-right ml-4">
                       <p className="font-bold text-black">{formatCurrency(order.total)}</p>
-                      <p className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${statusTone(order.status)}`}>
-                        {order.status}
+                    <p className={`mt-2 inline-block px-3 py-1 rounded-full text-xs font-medium ${statusTone(order.status)}`}>
+                      {orderStatusLabel(order.status)}
                       </p>
                     </div>
                   </div>

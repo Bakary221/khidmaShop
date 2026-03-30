@@ -11,25 +11,40 @@ export function generateInvoicePdf(order: Order) {
   pdf.setFontSize(18);
   pdf.text("KHIDMA SHOP", margin, y);
 
-  y += 10;
-  pdf.setFontSize(11);
+  y += 8;
+  pdf.setFontSize(12);
+  pdf.text("Khidma Service", margin, y);
+  y += 8;
   pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.text("Adresse: Plateau, Abidjan", margin, y);
+  y += 6;
+  pdf.text("Téléphone: +225 27 20 00 00 00", margin, y);
+  y += 6;
+  pdf.text("Email: contact@khidma.shop", margin, y);
+
+  y += 8;
+  pdf.setFont("helvetica", "bold");
   pdf.text(`Facture: ${orderLabel(order)}`, margin, y);
   y += 7;
+  pdf.setFont("helvetica", "normal");
   pdf.text(`Client: ${order.customerName}`, margin, y);
-  y += 7;
+  y += 6;
   pdf.text(`Téléphone: ${order.phone}`, margin, y);
-  y += 7;
+  y += 6;
+  pdf.text(`Statut: ${order.status}`, margin, y);
+  y += 6;
   pdf.text(`Date: ${formatDate(order.createdAt)}`, margin, y);
-  y += 10;
 
+  y += 8;
   pdf.setFont("helvetica", "bold");
   pdf.text("Produits", margin, y);
   y += 8;
 
   pdf.setFont("helvetica", "normal");
   order.items.forEach((item) => {
-    const line = `${item.product.name} x${item.quantity} - ${formatCurrency(item.product.price * item.quantity)}`;
+    const snapshot = item.productSnapshot;
+    const line = `${snapshot.name} x${item.quantity} - ${formatCurrency(snapshot.price * item.quantity)}`;
     const split = pdf.splitTextToSize(line, 180);
     pdf.text(split, margin, y);
     y += split.length * 6 + 2;
@@ -38,7 +53,7 @@ export function generateInvoicePdf(order: Order) {
   y += 4;
   pdf.setFont("helvetica", "bold");
   pdf.text(`Total: ${formatCurrency(order.total)}`, margin, y);
-  y += 7;
+  y += 6;
   pdf.setFont("helvetica", "normal");
   pdf.text(`Localisation: ${order.latitude ?? "-"}, ${order.longitude ?? "-"}`, margin, y);
 

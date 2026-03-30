@@ -9,19 +9,13 @@ import { AdminHeader } from "@/components/admin/AdminHeader";
 import { AdminCard } from "@/components/admin/AdminCard";
 import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminDataDisplay } from "@/components/admin/AdminDataDisplay";
-import { formatCurrency, formatDate } from "@/utils/format";
+import { formatCurrency, formatDate, orderStatusLabel } from "@/utils/format";
 import { statusTone } from "@/utils/identity";
 
 const statusIcons = {
-  en_attente: <Clock className="h-4 w-4" />,
-  confirmee: <TrendingUp className="h-4 w-4" />,
-  livree: <CheckCircle className="h-4 w-4" />,
-};
-
-const statusLabels = {
-  en_attente: "En attente",
-  confirmee: "Confirmée",
-  livree: "Livrée",
+  PENDING: <Clock className="h-4 w-4" />,
+  CONFIRMED: <TrendingUp className="h-4 w-4" />,
+  DELIVERED: <CheckCircle className="h-4 w-4" />,
 };
 
 export default function AdminOrdersPage() {
@@ -46,7 +40,7 @@ export default function AdminOrdersPage() {
   }, [orders, filter]);
 
   const updateStatusMutation = useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: "en_attente" | "confirmee" | "livree" }) =>
+    mutationFn: ({ orderId, status }: { orderId: string; status: "PENDING" | "CONFIRMED" | "DELIVERED" }) =>
       updateOrderStatus(orderId, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-orders"] });
@@ -63,7 +57,7 @@ export default function AdminOrdersPage() {
   const shareLocationOnWhatsApp = (order: any) => {
     if (!order.latitude || !order.longitude) return;
 
-    const message = `📍 Localisation du client pour la commande #${order.id}\\n\\n👤 Client: ${order.customerName}\\n📞 Téléphone: ${order.phone || 'N/A'}\\n📍 Adresse: ${order.address || 'N/A'}\\n\\n📦 Commande: ${order.items.length} article(s)\\n💰 Total: ${formatCurrency(order.total)}\\n\\nStatut: ${statusLabels[order.status as keyof typeof statusLabels] || order.status}\\n\\n📍 Coordonnées GPS:\\nLatitude: ${order.latitude}\\nLongitude: ${order.longitude}\\n\\n🗺️ Google Maps: https://maps.google.com/?q=${order.latitude},${order.longitude}`;
+    const message = `📍 Localisation du client pour la commande #${order.id}\\n\\n👤 Client: ${order.customerName}\\n📞 Téléphone: ${order.phone || 'N/A'}\\n📍 Adresse: ${order.address || 'N/A'}\\n\\n📦 Commande: ${order.items.length} article(s)\\n💰 Total: ${formatCurrency(order.total)}\\n\\nStatut: ${orderStatusLabel(order.status)}\\n\\n📍 Coordonnées GPS:\\nLatitude: ${order.latitude}\\nLongitude: ${order.longitude}\\n\\n🗺️ Google Maps: https://maps.google.com/?q=${order.latitude},${order.longitude}`;
 
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
@@ -76,10 +70,10 @@ export default function AdminOrdersPage() {
     const orderItemsHTML = order.items.map((item: any) => {
       return `
         <tr>
-          <td>${item.product.name}</td>
+          <td>${item.productSnapshot.name}</td>
           <td>${item.quantity}</td>
-          <td>${formatCurrency(item.product.price)}</td>
-          <td>${formatCurrency(item.product.price * item.quantity)}</td>
+          <td>${formatCurrency(item.productSnapshot.price)}</td>
+          <td>${formatCurrency(item.productSnapshot.price * item.quantity)}</td>
         </tr>
       `;
     }).join('');
@@ -118,7 +112,7 @@ export default function AdminOrdersPage() {
             <div>
               <h3>Détails commande</h3>
               <p><strong>Date:</strong> ${formatDate(order.createdAt)}</p>
-              <p><strong>Statut:</strong> <span class="status ${order.status}">${order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span></p>
+              <p><strong>Statut:</strong> <span class="status ${order.status}">${orderStatusLabel(order.status)}</span></p>
               <p><strong>Articles:</strong> ${order.items.length}</p>
             </div>
           </div>
@@ -151,9 +145,9 @@ export default function AdminOrdersPage() {
 
   const statusOptions = [
     { status: "all", label: "Toutes", count: orders.length },
-    { status: "en_attente", label: "En attente", count: orders.filter(o => o.status === "en_attente").length },
-    { status: "confirmee", label: "Confirmées", count: orders.filter(o => o.status === "confirmee").length },
-    { status: "livree", label: "Livrées", count: orders.filter(o => o.status === "livree").length },
+    { status: "PENDING", label: "En attente", count: orders.filter((o) => o.status === "PENDING").length },
+    { status: "CONFIRMED", label: "Confirmées", count: orders.filter((o) => o.status === "CONFIRMED").length },
+    { status: "DELIVERED", label: "Livrées", count: orders.filter((o) => o.status === "DELIVERED").length },
   ];
 
   return (
@@ -236,7 +230,7 @@ export default function AdminOrdersPage() {
                     </div>
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${statusTone(order.status)}`}>
                       {statusIcons[order.status as keyof typeof statusIcons]}
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {orderStatusLabel(order.status)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -275,7 +269,7 @@ export default function AdminOrdersPage() {
                       <td className="py-4 px-4">
                         <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${statusTone(order.status)}`}>
                           {statusIcons[order.status as keyof typeof statusIcons]}
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          {orderStatusLabel(order.status)}
                         </span>
                       </td>
                       <td className="py-4 px-4 text-sm text-black/60 hidden sm:table-cell">
@@ -311,7 +305,7 @@ export default function AdminOrdersPage() {
               </div>
               <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${statusTone(selectedOrder.status)}`}>
                 {statusIcons[selectedOrder.status as keyof typeof statusIcons]}
-                {statusLabels[selectedOrder.status as keyof typeof statusLabels]}
+                {orderStatusLabel(selectedOrder.status)}
               </span>
             </div>
 
@@ -471,15 +465,15 @@ export default function AdminOrdersPage() {
                 <select
                   value={selectedOrder.status}
                   onChange={(e) => {
-                    const status = e.target.value as "en_attente" | "confirmee" | "livree";
+                    const status = e.target.value as "PENDING" | "CONFIRMED" | "DELIVERED";
                     updateStatusMutation.mutate({ orderId: selectedOrder.id, status });
                   }}
                   disabled={updateStatusMutation.isPending}
                   className="flex-1 px-4 py-3 rounded-xl text-lg font-semibold bg-white text-black border-2 border-black/20 focus:border-black focus:outline-none transition-all shadow-sm hover:shadow-md"
                 >
-                  <option value="en_attente">⏳ En attente</option>
-                  <option value="confirmee">✅ Confirmée</option>
-                  <option value="livree">📦 Livrée</option>
+                  <option value="PENDING">⏳ En attente</option>
+                  <option value="CONFIRMED">✅ Confirmée</option>
+                  <option value="DELIVERED">📦 Livrée</option>
                 </select>
               </div>
             </div>

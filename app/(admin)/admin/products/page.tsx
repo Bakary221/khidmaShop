@@ -68,6 +68,7 @@ export default function AdminProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null);
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [uploadingImages, setUploadingImages] = useState<boolean>(false);
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
 
   const reset = () => {
     setEditing(null);
@@ -81,10 +82,12 @@ export default function AdminProductsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const { categoryName, ...formPayload } = form;
+
       const payload = {
-        ...form,
-        sizes: form.sizes.split(",").map(s => s.trim()).filter(Boolean),
-        colors: form.colors.split(",").map(c => c.trim()).filter(Boolean),
+        ...formPayload,
+        sizes: formPayload.sizes.split(",").map((s) => s.trim()).filter(Boolean),
+        colors: formPayload.colors.split(",").map((c) => c.trim()).filter(Boolean),
       };
       return editing ? updateProduct(editing.id, payload) : createProduct(payload);
     },
@@ -94,13 +97,18 @@ export default function AdminProductsPage() {
       toast.success("Produit", editing ? "mis à jour" : "créé");
       handleClose();
     },
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Erreur de sauvegarde du produit";
+      toast.error("Produit", message);
+    },
   });
 
   const deleteMutation = useMutation({
-    mutationFn: deleteProduct,
+    mutationFn: (id: string) => deleteProduct(id),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
       await queryClient.invalidateQueries({ queryKey: ["products"] });
+      setDeleteTarget(null);
       toast.success("Produit supprimé");
     },
   });
@@ -254,7 +262,7 @@ export default function AdminProductsPage() {
                           Éditer
                         </button>
                         <button
-                          onClick={() => deleteMutation.mutate(product.id)}
+                          onClick={() => setDeleteTarget(product)}
                           className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium text-sm transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -309,7 +317,7 @@ export default function AdminProductsPage() {
                             <Pencil className="h-4 w-4" />
                           </button>
                           <button
-                            onClick={() => deleteMutation.mutate(product.id)}
+                            onClick={() => setDeleteTarget(product)}
                             className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium text-sm transition-colors"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -505,6 +513,36 @@ export default function AdminProductsPage() {
               >
                 {editing ? "Mettre à jour" : "Créer"}
               </AdminButton>
+            </div>
+          </div>
+        </Modal>
+      )}
+      {deleteTarget && (
+        <Modal
+          open={Boolean(deleteTarget)}
+          onClose={() => setDeleteTarget(null)}
+          title="Supprimer le produit"
+        >
+          <div className="space-y-4">
+            <p className="text-sm text-black/70">
+              Êtes-vous sûr de vouloir supprimer <strong>{deleteTarget.name}</strong> ? Cette action est irréversible.
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-white text-black hover:bg-black/5 transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteMutation.mutate(deleteTarget.id)}
+                disabled={deleteMutation.isPending}
+                className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              </button>
             </div>
           </div>
         </Modal>

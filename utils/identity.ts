@@ -8,7 +8,7 @@ export function getInitials(name: string) {
 }
 
 export function statusTone(value: string) {
-  if (value === "delivered" || value === "confirmed") return "border-black bg-black text-white";
-  if (value === "pending") return "border-black/15 bg-black/5 text-black";
+  if (value === "DELIVERED" || value === "CONFIRMED") return "border-black bg-black text-white";
+  if (value === "PENDING") return "border-black/15 bg-black/5 text-black";
   return "border-black/10 bg-white text-black/70";
 }

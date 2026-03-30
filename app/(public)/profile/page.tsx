@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { LogOut, UserCircle2, Phone, BadgeCheck, History } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatPhone } from "@/utils/format";
+import { logout as apiLogout } from "@/services/auth.service";
 
 export default function ProfilePage() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const isHydrated = useAuthStore((state) => state.isHydrated);
-  const logout = useAuthStore((state) => state.logout);
+  const clearSession = useAuthStore((state) => state.clearSession);
 
   useEffect(() => {
     if (isHydrated && !user) {
@@ -62,7 +63,7 @@ export default function ProfilePage() {
               <BadgeCheck className="h-3.5 w-3.5" />
               Statut
             </p>
-            <p className="mt-2 text-sm font-medium">Compte {user.role === "admin" ? "administrateur" : "client"}</p>
+            <p className="mt-2 text-sm font-medium">Compte {user.role === "ADMIN" ? "administrateur" : "client"}</p>
           </div>
         </div>
 
@@ -76,9 +77,13 @@ export default function ProfilePage() {
           </Link>
           <button
             type="button"
-            onClick={() => {
-              logout();
-              router.push("/");
+            onClick={async () => {
+              try {
+                await apiLogout();
+              } finally {
+                clearSession();
+                router.push("/");
+              }
             }}
             className="btn-base border border-black/10 bg-white px-5 py-3"
           >

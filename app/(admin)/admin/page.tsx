@@ -11,10 +11,9 @@ import { AdminButton } from "@/components/admin/AdminButton";
 
 export default function AdminRootPage() {
   const router = useRouter();
-  const setSession = useAuthStore((state) => state.setSession);
   const user = useAuthStore((state) => state.user);
   const toast = useToast();
-  const [login, setLogin] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [nextPath, setNextPath] = useState<string | null>(null);
@@ -25,16 +24,15 @@ export default function AdminRootPage() {
   }, []);
 
   useEffect(() => {
-    if (user?.role === "admin") {
+    if (user?.role === "ADMIN") {
       router.replace(nextPath ?? "/admin/dashboard");
     }
   }, [nextPath, router, user]);
 
   const mutation = useMutation({
     mutationFn: adminLogin,
-    onSuccess: (session) => {
-      setSession(session);
-      toast.success("Connexion admin réussie", session.user.name);
+    onSuccess: () => {
+      toast.success("Connexion admin réussie");
       router.push(nextPath ?? "/admin/dashboard");
     },
     onError: (err: Error) => toast.error("Accès refusé", err.message),
@@ -42,7 +40,7 @@ export default function AdminRootPage() {
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    mutation.mutate({ login, password });
+    mutation.mutate({ email, password });
   };
 
   return (
@@ -58,8 +56,8 @@ export default function AdminRootPage() {
             <label className="block text-xs font-semibold uppercase tracking-wide text-black/70">Utilisateur</label>
             <input
               type="text"
-              value={login}
-              onChange={(e) => setLogin(e.target.value)}
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               className="mt-2 w-full rounded border border-black/20 bg-white px-3 py-2 text-black focus:border-black focus:outline-none"
               placeholder="admin@khidma.shop"
               required

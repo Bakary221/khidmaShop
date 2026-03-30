@@ -6,6 +6,13 @@ export type Product = {
   images: string[];
   categoryId: string;
   categoryName: string;
+  category?: {
+    id: string;
+    name: string;
+    slug: string;
+    image: string;
+    active: boolean;
+  } | null;
   brand: string;
   description: string;
   sizes: string[];
@@ -21,6 +28,7 @@ export type Category = {
   name: string;
   slug: string;
   active: boolean;
+  image: string;
 };
 
 export type ProductFilters = {

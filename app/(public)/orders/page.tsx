@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { listOrders } from "@/services/order.service";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useOrderStore } from "@/stores/useOrderStore";
-import { formatCurrency, formatDate, orderLabel } from "@/utils/format";
+import { formatCurrency, formatDate, orderLabel, orderStatusLabel } from "@/utils/format";
 import { Loader } from "@/components/ui/Loader";
 
 export default function OrdersPage() {
@@ -83,7 +83,9 @@ export default function OrdersPage() {
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">{formatCurrency(order.total)}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-black/45">{order.status}</p>
+                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-black/45">
+                    {orderStatusLabel(order.status)}
+                  </p>
                 </div>
               </div>
             </Link>

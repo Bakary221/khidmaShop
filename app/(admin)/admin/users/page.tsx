@@ -18,14 +18,14 @@ export default function AdminUsersPage() {
   const stats = useMemo(() => {
     return {
       total: users.length,
-      admins: users.filter(u => u.role === "admin").length,
-      clients: users.filter(u => u.role === "client").length,
+      admins: users.filter((u) => u.role === "ADMIN").length,
+      clients: users.filter((u) => u.role === "CLIENT").length,
     };
   }, [users]);
 
   const roleColors = {
-    admin: "bg-black text-white border border-black/20",
-    client: "bg-white text-black border border-black/20",
+    ADMIN: "bg-black text-white border border-black/20",
+    CLIENT: "bg-white text-black border border-black/20",
   };
 
   const renderUserCard = (user: any) => (
@@ -36,10 +36,10 @@ export default function AdminUsersPage() {
           <p className="text-xs text-black/60">{user.phone}</p>
         </div>
         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${roleColors[user.role as keyof typeof roleColors]}`}>
-          {user.role === "admin" ? (
+          {user.role === "ADMIN" ? (
             <Shield className="h-3 w-3" />
           ) : null}
-          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+          {user.role === "ADMIN" ? "Administrateur" : "Client"}
         </span>
       </div>
       <div className="text-xs text-black/60">
@@ -83,10 +83,10 @@ export default function AdminUsersPage() {
               </td>
               <td className="py-4 px-4">
                 <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${roleColors[user.role as keyof typeof roleColors]}`}>
-                  {user.role === "admin" ? (
-                    <Shield className="h-3 w-3" />
-                  ) : null}
-                  {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                          {user.role === "ADMIN" ? (
+                            <Shield className="h-3 w-3" />
+                          ) : null}
+                          {user.role === "ADMIN" ? "Administrateur" : "Client"}
                 </span>
               </td>
               <td className="py-4 px-4 text-sm text-black/60 hidden sm:table-cell">

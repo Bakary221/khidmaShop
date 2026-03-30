@@ -1,4 +1,4 @@
-import { Order } from "@/types/order";
+import { Order, OrderStatus } from "@/types/order";
 
 export function formatCurrency(amount: number) {
   return new Intl.NumberFormat("fr-FR", {
@@ -21,4 +21,17 @@ export function formatPhone(value: string) {
 
 export function orderLabel(order: Order) {
   return `CMD-${order.id.slice(-6).toUpperCase()}`;
+}
+
+export function orderStatusLabel(status: OrderStatus) {
+  switch (status) {
+    case "PENDING":
+      return "En attente";
+    case "CONFIRMED":
+      return "Confirmée";
+    case "DELIVERED":
+      return "Livrée";
+    default:
+      return status;
+  }
 }

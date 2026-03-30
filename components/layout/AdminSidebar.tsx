@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { LayoutDashboard, Package, Shapes, ClipboardList, Users, LogOut, ShieldCheck, X } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { logout as endSession } from "@/services/auth.service";
 
 const navItems = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -23,7 +24,7 @@ export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
-  const logout = useAuthStore((state) => state.logout);
+  const clearSession = useAuthStore((state) => state.clearSession);
 
   return (
     <>
@@ -89,9 +90,13 @@ export function AdminSidebar({ isOpen = true, onClose }: AdminSidebarProps) {
       <div className="mt-auto">
         <button
           type="button"
-          onClick={() => {
-            logout();
-            router.push("/auth");
+          onClick={async () => {
+            try {
+              await endSession();
+            } finally {
+              clearSession();
+              router.push("/auth");
+            }
           }}
           className="w-full rounded-lg border border-red-600 bg-red-600 px-3 py-2 text-sm font-medium text-white hover:bg-red-700"
         >

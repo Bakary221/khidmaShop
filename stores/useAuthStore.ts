@@ -1,42 +1,51 @@
-import { AuthRole, AuthUser } from "@/types/auth";
-import { getSafeStorage, removeCookie } from "@/utils/storage";
-import { create } from "zustand";
-import { createJSONStorage, persist } from "zustand/middleware";
-import { clearAuthSession } from "@/services/auth.service";
+import { AuthUser } from '@/types/auth';
+import { create } from 'zustand';
+import { clearAccessTokenCookie, getAccessTokenFromCookie } from '@/services/token-cookie';
+import { decodeJwt } from '@/utils/jwt';
+
+const removeStaleAuthStorage = () => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  window.localStorage.removeItem('khidma-auth');
+};
+
+const getExpirationFromToken = (token: string | null) => {
+  if (!token) return null;
+  const payload = decodeJwt<{ exp?: number }>(token);
+  return payload?.exp ? payload.exp * 1000 : null;
+};
+
+removeStaleAuthStorage();
 
 type AuthState = {
   user: AuthUser | null;
   token: string | null;
-  role: AuthRole | null;
+  accessTokenExpiresAt: number | null;
   isHydrated: boolean;
   setHydrated: (value: boolean) => void;
-  setSession: (payload: { user: AuthUser; token: string }) => void;
-  logout: () => void;
+  setToken: (token: string | null) => void;
+  setUser: (user: AuthUser | null) => void;
+  clearSession: () => void;
 };
 
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      role: null,
-      isHydrated: false,
-      setHydrated: (value) => set({ isHydrated: value }),
-      setSession: ({ user, token }) => set({ user, token, role: user.role }),
-      logout: () => {
-        clearAuthSession();
-        removeCookie("khidma_token");
-        removeCookie("khidma_role");
-        set({ user: null, token: null, role: null });
-      },
+const initialToken = getAccessTokenFromCookie();
+
+export const useAuthStore = create<AuthState>()((set) => ({
+  user: null,
+  token: initialToken,
+  accessTokenExpiresAt: getExpirationFromToken(initialToken),
+  isHydrated: true,
+  setHydrated: (value) => set({ isHydrated: value }),
+  setToken: (token) =>
+    set({
+      token,
+      accessTokenExpiresAt: getExpirationFromToken(token),
     }),
-    {
-      name: "khidma-auth",
-      storage: createJSONStorage(() => getSafeStorage()),
-      partialize: (state) => ({ user: state.user, token: state.token, role: state.role }),
-      onRehydrateStorage: () => (state) => {
-        state?.setHydrated(true);
-      },
-    },
-  ),
-);
+  setUser: (user) => set({ user }),
+  clearSession: () => {
+    clearAccessTokenCookie();
+    set({ user: null, token: null, accessTokenExpiresAt: null });
+  },
+}));

@@ -12,6 +12,7 @@ type AdminInputProps = {
   helperText?: string;
   required?: boolean;
   disabled?: boolean;
+  readOnly?: boolean;
   className?: string;
   textarea?: boolean;
   rows?: number;
@@ -31,6 +32,7 @@ export function AdminInput({
   helperText,
   required = false,
   disabled = false,
+  readOnly = false,
   className,
   textarea = false,
   rows = 4,
@@ -53,6 +55,7 @@ export function AdminInput({
     className: cn(baseStyles, borderStyles, icon && "pl-10", className),
     value: inputValue,
     onChange,
+    readOnly,
   };
 
   return (

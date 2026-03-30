@@ -1,47 +1,44 @@
-import { categoriesSeed } from "@/services/mock-db";
-import { Category } from "@/types/product";
-import { delay } from "@/utils/delay";
-import { createId } from "@/utils/id";
+import { request } from '@/services/api.client';
+import { Category } from '@/types/product';
 
-let categories: Category[] = [...categoriesSeed];
-
-type ListCategoriesOptions = {
-  includeInactive?: boolean;
+type CreateCategoryPayload = {
+  name: string;
+  slug?: string;
+  image?: string;
+  active?: boolean;
 };
 
-export async function listCategories(options?: ListCategoriesOptions) {
-  await delay(400);
-  if (options?.includeInactive) {
-    return [...categories];
-  }
-  return categories.filter((category) => category.active);
+type UpdateCategoryPayload = Partial<CreateCategoryPayload>;
+
+export async function listCategories(options?: { includeInactive?: boolean }) {
+  return request<Category[]>('/categories', {
+    params: options?.includeInactive ? { includeInactive: true } : undefined,
+  });
 }
 
-export async function createCategory(input: Omit<Category, "id">) {
-  await delay(500);
-  const category = { ...input, id: createId("cat"), active: input.active ?? true };
-  categories = [category, ...categories];
-  return category;
+export async function createCategory(payload: CreateCategoryPayload) {
+  return request<Category>('/categories', {
+    method: 'POST',
+    body: payload,
+  });
 }
 
-export async function updateCategory(id: string, input: Omit<Category, "id">) {
-  await delay(500);
-  categories = categories.map((category) => (category.id === id ? { id, ...input } : category));
-  return categories.find((category) => category.id === id) ?? null;
+export async function updateCategory(id: string, payload: UpdateCategoryPayload) {
+  return request<Category>(`/categories/${id}`, {
+    method: 'PUT',
+    body: payload,
+  });
 }
 
 export async function toggleCategoryActive(id: string, active: boolean) {
-  await delay(350);
-  categories = categories.map((category) => (category.id === id ? { ...category, active } : category));
-  return categories.find((category) => category.id === id) ?? null;
+  return request<Category>(`/categories/${id}/toggle`, {
+    method: 'PATCH',
+    body: { active },
+  });
 }
 
 export async function deleteCategory(id: string) {
-  await delay(400);
-  categories = categories.filter((category) => category.id !== id);
-  return true;
-}
-
-export function getCategorySnapshot() {
-  return [...categories];
+  return request<{ message: string }>(`/categories/${id}`, {
+    method: 'DELETE',
+  });
 }

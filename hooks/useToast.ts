@@ -1,19 +1,20 @@
 "use client";
 
-import { useUiStore } from "@/stores/useUiStore";
+import toast from "react-hot-toast";
 
 export function useToast() {
-  const pushToast = useUiStore((state) => state.pushToast);
+  const formatMessage = (title: string, description?: string) =>
+    description ? `${title} — ${description}` : title;
 
   return {
     success(title: string, description?: string) {
-      pushToast({ title, description, variant: "success" });
+      toast.success(formatMessage(title, description));
     },
     error(title: string, description?: string) {
-      pushToast({ title, description, variant: "error" });
+      toast.error(formatMessage(title, description));
     },
     info(title: string, description?: string) {
-      pushToast({ title, description, variant: "default" });
+      toast(formatMessage(title, description), { icon: "ℹ️" });
     },
   };
 }

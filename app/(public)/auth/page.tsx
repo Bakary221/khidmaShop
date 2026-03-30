@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
-import { sendOtp, verifyOtp, getDemoOtp } from "@/services/auth.service";
+import { sendOtp, verifyOtp } from "@/services/auth.service";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useToast } from "@/hooks/useToast";
 import { OTPInput } from "@/components/auth/OTPInput";
@@ -12,7 +12,6 @@ import { Loader } from "@/components/ui/Loader";
 
 export default function AuthPage() {
   const router = useRouter();
-  const setSession = useAuthStore((state) => state.setSession);
   const user = useAuthStore((state) => state.user);
   const toast = useToast();
   const [phone, setPhone] = useState("");
@@ -20,22 +19,27 @@ export default function AuthPage() {
   const [otpRequested, setOtpRequested] = useState(false);
 
   const sendMutation = useMutation({
-    mutationFn: sendOtp,
+    mutationFn: () => sendOtp({ phone, role: "CLIENT" }),
     onSuccess: () => {
       setOtpRequested(true);
-      toast.success("OTP envoyé", `Code démo: ${getDemoOtp()}`);
+      toast.success("OTP envoyé", "Vérifiez votre téléphone");
     },
-    onError: (err: Error) => toast.error("Erreur d'envoi", err.message),
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Impossible d'envoyer le code";
+      toast.error("Erreur d'envoi", message);
+    },
   });
 
   const verifyMutation = useMutation({
-    mutationFn: verifyOtp,
-    onSuccess: (session) => {
-      setSession(session);
-      toast.success("Connexion réussie", session.user.name);
-      router.push("/");
+    mutationFn: () => verifyOtp({ phone, role: "CLIENT", otp }),
+    onSuccess: () => {
+      toast.success("Connexion réussie");
+      router.replace("/");
     },
-    onError: (err: Error) => toast.error("OTP invalide", err.message),
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Code invalide";
+      toast.error("OTP invalide", message);
+    },
   });
 
   useEffect(() => {
@@ -72,7 +76,7 @@ export default function AuthPage() {
 
           <button
             type="button"
-            onClick={() => sendMutation.mutate({ phone, role: "client" })}
+            onClick={() => sendMutation.mutate()}
             disabled={!phone || sendMutation.isPending}
             className="btn-base w-full bg-black px-5 py-4 text-white"
           >
@@ -82,10 +86,9 @@ export default function AuthPage() {
           {otpRequested ? (
             <div className="space-y-3 pt-2">
               <OTPInput value={otp} onChange={setOtp} />
-              <p className="text-xs text-black/45">Code démo: {getDemoOtp()}</p>
               <button
                 type="button"
-                onClick={() => verifyMutation.mutate({ phone, role: "client", otp })}
+                onClick={() => verifyMutation.mutate()}
                 disabled={otp.length !== 6 || verifyMutation.isPending}
                 className="btn-base w-full border border-black/10 bg-white px-5 py-4"
               >

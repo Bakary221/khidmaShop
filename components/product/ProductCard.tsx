@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Star, ShoppingCart } from "lucide-react";
@@ -20,10 +21,12 @@ export function ProductCard({ product }: ProductCardProps) {
     <motion.article whileTap={{ scale: 0.99 }} className="card-base overflow-hidden">
       <Link href={`/products/${product.id}`} className="block">
         <div className="relative aspect-[3/4] overflow-hidden bg-black/5 sm:aspect-[4/5]">
-          <img
-            src={product.images[0]}
+          <Image
+            src={product.images[0] ?? "/assets/products/chemise-1.jpg"}
             alt={product.name}
-            className="h-full w-full object-cover transition duration-300 hover:scale-[1.03]"
+            fill
+            sizes="(min-width: 640px) 280px, 200px"
+            className="object-cover transition duration-300 hover:scale-[1.03]"
             loading="lazy"
           />
         </div>

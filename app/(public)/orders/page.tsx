@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Package2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -22,7 +22,7 @@ export default function OrdersPage() {
     queryFn: listOrders,
   });
 
-  const orders = useMemo(() => {
+  const orders = useMemo<(typeof remoteOrders)[number][]>(() => {
     const merged = [...localOrders, ...remoteOrders];
     const unique = new Map<string, (typeof merged)[number]>();
 
@@ -35,6 +35,18 @@ export default function OrdersPage() {
     if (!user) return allOrders;
     return allOrders.filter((order) => order.phone === user.phone);
   }, [localOrders, remoteOrders, user]);
+
+  const [statusFilter, setStatusFilter] = useState<"PENDING" | "CONFIRMED" | "DELIVERED">("DELIVERED");
+  const filteredOrders = useMemo(
+    () => orders.filter((order) => order.status === statusFilter),
+    [orders, statusFilter],
+  );
+
+  const statusOptions = [
+    { value: "PENDING" as const, label: "En attente" },
+    { value: "CONFIRMED" as const, label: "En cours" },
+    { value: "DELIVERED" as const, label: "Livré" },
+  ];
 
   useEffect(() => {
     if (isHydrated && !user) {
@@ -66,11 +78,28 @@ export default function OrdersPage() {
         <h1 className="section-title">Historique de vos achats</h1>
       </div>
 
+      <div className="flex flex-wrap gap-2">
+        {statusOptions.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            onClick={() => setStatusFilter(option.value)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] transition ${
+              statusFilter === option.value
+                ? "border-black bg-black text-white"
+                : "border-black/10 bg-white text-black hover:border-black/40"
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <Loader className="py-10" />
-      ) : orders.length ? (
+      ) : filteredOrders.length ? (
         <div className="grid gap-3">
-          {orders.map((order) => (
+          {filteredOrders.map((order) => (
             <Link key={order.id} href="/checkout" className="card-base block p-4 transition hover:border-black/30">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -93,7 +122,7 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="card-base p-6 text-sm text-black/60">
-          Vous n’avez encore passé aucune commande.
+          Aucune commande {statusOptions.find((opt) => opt.value === statusFilter)?.label?.toLowerCase()} pour le moment.
           <div className="mt-4">
             <Link href="/products" className="btn-base bg-black px-4 py-3 text-white">
               Découvrir le catalogue

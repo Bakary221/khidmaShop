@@ -2,7 +2,6 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { request } from '@/services/api.client';
 import { AuthRole, AuthUser, OtpSendPayload, OtpVerifyPayload } from '@/types/auth';
 import { getUserProfile } from '@/services/user.service';
-import { setAccessTokenCookie } from '@/services/token-cookie';
 
 type TokenResponse = {
   accessToken: string;
@@ -25,7 +24,6 @@ export async function verifyOtp(payload: OtpVerifyPayload): Promise<TokenRespons
   });
 
   useAuthStore.getState().setToken(data.accessToken);
-  setAccessTokenCookie(data.accessToken);
   await loadUserProfile();
   return data;
 }
@@ -38,7 +36,6 @@ export async function adminLogin(payload: { email: string; password: string }): 
   });
 
   useAuthStore.getState().setToken(data.accessToken);
-  setAccessTokenCookie(data.accessToken);
   await loadUserProfile();
   return data;
 }

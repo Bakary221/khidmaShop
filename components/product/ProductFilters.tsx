@@ -20,6 +20,7 @@ type ProductFiltersProps = {
 };
 
 export function ProductFilters({ categories, brands, value, onChange, showSearch = true }: ProductFiltersProps) {
+  const availableCategories = categories ?? [];
   const FilterContent = ({ compact = false }: { compact?: boolean }) => (
     <div className={cn("space-y-4", compact ? "pt-4" : "")}>
       {showSearch ? (
@@ -64,7 +65,7 @@ export function ProductFilters({ categories, brands, value, onChange, showSearch
             >
               Toutes
             </button>
-            {categories.map((category) => (
+            {availableCategories.map((category) => (
               <button
                 key={category.id}
                 type="button"

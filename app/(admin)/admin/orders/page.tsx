@@ -11,6 +11,7 @@ import { AdminStatCard } from "@/components/admin/AdminStatCard";
 import { AdminDataDisplay } from "@/components/admin/AdminDataDisplay";
 import { formatCurrency, formatDate, orderStatusLabel } from "@/utils/format";
 import { statusTone } from "@/utils/identity";
+import { generateInvoicePdf } from "@/utils/pdf";
 
 const statusIcons = {
   PENDING: <Clock className="h-4 w-4" />,
@@ -64,81 +65,7 @@ export default function AdminOrdersPage() {
   };
 
   const printInvoice = (order: any) => {
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-
-    const orderItemsHTML = order.items.map((item: any) => {
-      return `
-        <tr>
-          <td>${item.productSnapshot.name}</td>
-          <td>${item.quantity}</td>
-          <td>${formatCurrency(item.productSnapshot.price)}</td>
-          <td>${formatCurrency(item.productSnapshot.price * item.quantity)}</td>
-        </tr>
-      `;
-    }).join('');
-
-    const invoiceHTML = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>Facture - Commande #${order.id}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
-            .info { display: flex; justify-content: space-between; margin-bottom: 30px; }
-            .items { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-            .items th, .items td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            .items th { background-color: #f5f5f5; }
-            .total { text-align: right; font-size: 18px; font-weight: bold; }
-            .status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; }
-            .status.pending { background: #fef3c7; color: #d97706; }
-            .status.confirmed { background: #dbeafe; color: #2563eb; }
-            .status.delivered { background: #d1fae5; color: #065f46; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>FACTURE</h1>
-            <h2>Commande #${order.id}</h2>
-          </div>
-          <div class="info">
-            <div>
-              <h3>Informations client</h3>
-              <p><strong>Nom:</strong> ${order.customerName}</p>
-              <p><strong>Téléphone:</strong> ${order.phone || 'N/A'}</p>
-              ${order.address ? `<p><strong>Adresse:</strong> ${order.address}</p>` : ''}
-            </div>
-            <div>
-              <h3>Détails commande</h3>
-              <p><strong>Date:</strong> ${formatDate(order.createdAt)}</p>
-              <p><strong>Statut:</strong> <span class="status ${order.status}">${orderStatusLabel(order.status)}</span></p>
-              <p><strong>Articles:</strong> ${order.items.length}</p>
-            </div>
-          </div>
-          <table class="items">
-            <thead>
-              <tr>
-                <th>Article</th>
-                <th>Quantité</th>
-                <th>Prix unitaire</th>
-                <th>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${orderItemsHTML}
-            </tbody>
-          </table>
-          <div class="total">
-            <p>Total: ${formatCurrency(order.total)}</p>
-          </div>
-        </body>
-      </html>
-    `;
-
-    printWindow.document.write(invoiceHTML);
-    printWindow.document.close();
-    printWindow.print();
+    generateInvoicePdf(order);
   };
 
   const revenue = useMemo(() => orders.reduce((sum, order) => sum + (order.total || 0), 0), [orders]);

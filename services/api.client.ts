@@ -1,7 +1,9 @@
 import { useAuthStore } from '@/stores/useAuthStore';
-import { getAccessTokenFromCookie, setAccessTokenCookie } from '@/services/token-cookie';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? 'http://localhost:3001';
+const LOCAL_API_URL = 'http://localhost:3001';
+const FALLBACK_API_URL = process.env.NODE_ENV === 'development' ? LOCAL_API_URL : '';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? FALLBACK_API_URL;
+const API_PREFIX = BASE_URL ? '' : '/api';
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -32,7 +34,7 @@ async function ensureValidAccessToken() {
   await refreshTokens();
 }
 
-async function refreshTokens() {
+export async function refreshTokens() {
   if (!BASE_URL) {
     throw new ApiError('Paramètres API manquants');
   }
@@ -42,18 +44,26 @@ async function refreshTokens() {
   }
 
   refreshPromise = (async () => {
-    const response = await fetch(`${BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    } catch (error) {
+      throw new ApiError('Impossible de rafraîchir la session');
+    }
 
     const payload = await response.json().catch(() => null);
+    const isUnauthorized = response.status === 401;
     if (!response.ok || payload?.success === false) {
-      useAuthStore.getState().setToken(null);
-      useAuthStore.getState().setUser(null);
+      if (isUnauthorized) {
+        useAuthStore.getState().setToken(null);
+        useAuthStore.getState().setUser(null);
+      }
       throw new ApiError(payload?.message ?? 'Session expirée');
     }
 
@@ -63,7 +73,6 @@ async function refreshTokens() {
     }
 
     useAuthStore.getState().setToken(data.accessToken);
-    setAccessTokenCookie(data.accessToken);
   })();
 
   try {
@@ -86,21 +95,16 @@ function buildQuery(params?: RequestOptions['params']) {
 }
 
 function getStoredToken() {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    return token;
-  }
+  return useAuthStore.getState().token;
+}
 
-  const cookieToken = getAccessTokenFromCookie();
-  if (cookieToken) {
-    useAuthStore.getState().setToken(cookieToken);
-  }
-
-  return cookieToken;
+function buildUrl(path: string) {
+  const prefix = BASE_URL || API_PREFIX;
+  return `${prefix}${path}`;
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const url = `${BASE_URL}${path}${buildQuery(options.params)}`;
+  const url = `${buildUrl(path)}${buildQuery(options.params)}`;
   const headers: Record<string, string> = options.body && !(options.body instanceof FormData)
     ? { 'Content-Type': 'application/json' }
     : {};

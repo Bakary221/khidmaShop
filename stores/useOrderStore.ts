@@ -3,6 +3,8 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { getSafeStorage } from "@/utils/storage";
 
+const MAX_PERSISTED_ORDERS = 10;
+
 type OrderState = {
   currentOrder: Order | null;
   orders: Order[];
@@ -19,10 +21,13 @@ export const useOrderStore = create<OrderState>()(
       orders: [],
       setCurrentOrder: (order) => set({ currentOrder: order }),
       addOrder: (order) =>
-        set((state) => ({
-          orders: [order, ...state.orders],
-          currentOrder: order,
-        })),
+        set((state) => {
+          const limitedOrders = [order, ...state.orders].slice(0, MAX_PERSISTED_ORDERS);
+          return {
+            orders: limitedOrders,
+            currentOrder: order,
+          };
+        }),
       updateOrder: (order) =>
         set((state) => ({
           orders: state.orders.map((current) => (current.id === order.id ? order : current)),

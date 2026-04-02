@@ -7,6 +7,7 @@ import { Minus, Plus, X } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { formatCurrency } from "@/utils/format";
+import { cn } from "@/utils/cn";
 import { useToast } from "@/hooks/useToast";
 
 export function CartDrawer() {
@@ -17,6 +18,8 @@ export function CartDrawer() {
   const removeItem = useCartStore((state) => state.removeItem);
   const subtotal = useCartStore((state) => state.subtotal);
   const toast = useToast();
+
+  const isCartEmpty = items.length === 0;
 
   return (
     <AnimatePresence>
@@ -103,7 +106,23 @@ export function CartDrawer() {
                 <span className="font-semibold">{formatCurrency(subtotal())}</span>
               </div>
               <div className="grid gap-2">
-                <Link href="/checkout" onClick={closeCartDrawer} className="btn-base bg-black px-4 py-3 text-white">
+                <Link
+                  href={isCartEmpty ? "#" : "/checkout"}
+                  onClick={(event) => {
+                    if (isCartEmpty) {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      toast.info("Ajoutez un article pour commander");
+                      return;
+                    }
+                    closeCartDrawer();
+                  }}
+                  className={cn(
+                    "btn-base px-4 py-3 text-white transition",
+                    isCartEmpty ? "bg-black/40 pointer-events-auto" : "bg-black",
+                  )}
+                  aria-disabled={isCartEmpty}
+                >
                   Commander
                 </Link>
                 <button type="button" onClick={closeCartDrawer} className="btn-base border border-black/10 bg-white px-4 py-3">

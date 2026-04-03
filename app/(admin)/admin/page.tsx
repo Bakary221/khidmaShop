@@ -25,10 +25,6 @@ export default function AdminRootPage() {
 
   useEffect(() => {
     console.log('Admin page mount:', { user: user?.role, nextPath });
-    if (user?.role === "ADMIN") {
-      console.log('Redirect to dashboard');
-      router.replace(nextPath ?? "/admin/dashboard");
-    }
   }, [nextPath, router, user]);
 
   const mutation = useMutation({

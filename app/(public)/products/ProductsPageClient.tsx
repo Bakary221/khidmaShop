@@ -148,11 +148,13 @@ export function ProductsPageClient() {
       ) : (
         <div className="space-y-6">
           <ProductGrid products={paginatedProducts} />
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={setCurrentPage}
-          />
+          <div className="hidden sm:block">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
         </div>
       )}
     </div>

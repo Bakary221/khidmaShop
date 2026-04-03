@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, UserCircle2, Phone, BadgeCheck, History } from "lucide-react";
+import { Modal } from "@/components/ui/Modal";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatPhone } from "@/utils/format";
 import { logout as apiLogout } from "@/services/auth.service";
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const user = useAuthStore((state) => state.user);
   const isHydrated = useAuthStore((state) => state.isHydrated);
   const clearSession = useAuthStore((state) => state.clearSession);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (isHydrated && !user) {
@@ -31,6 +33,16 @@ export default function ProfilePage() {
   if (!user) {
     return null;
   }
+
+  const handleLogout = async () => {
+    try {
+      await apiLogout();
+    } finally {
+      clearSession();
+      router.push("/");
+      setShowLogoutConfirm(false);
+    }
+  };
 
   return (
     <div className="container-safe space-y-6 py-6 pb-28 md:pb-8">
@@ -77,19 +89,31 @@ export default function ProfilePage() {
           </Link>
           <button
             type="button"
-            onClick={async () => {
-              try {
-                await apiLogout();
-              } finally {
-                clearSession();
-                router.push("/");
-              }
-            }}
+            onClick={() => setShowLogoutConfirm(true)}
             className="btn-base border border-black/10 bg-white px-5 py-3"
           >
             <LogOut className="mr-2 h-4 w-4" />
             Déconnexion
           </button>
+          <Modal open={showLogoutConfirm} onClose={() => setShowLogoutConfirm(false)} title="Confirmer déconnexion">
+            <p className="text-sm text-black/70 mb-4">Voulez-vous vraiment vous déconnecter ?</p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                className="flex-1 rounded-xl bg-black px-4 py-3 text-sm font-semibold text-white hover:bg-black/90"
+                onClick={handleLogout}
+              >
+                Confirmer
+              </button>
+              <button
+                type="button"
+                className="flex-1 rounded-xl border border-black/20 bg-white px-4 py-3 text-sm font-semibold hover:bg-black/5"
+                onClick={() => setShowLogoutConfirm(false)}
+              >
+                Annuler
+              </button>
+            </div>
+          </Modal>
         </div>
       </section>
     </div>

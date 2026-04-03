@@ -31,6 +31,8 @@ export function orderStatusLabel(status: OrderStatus) {
       return "Confirmée";
     case "DELIVERED":
       return "Livrée";
+    case "CANCELLED":
+      return "Annulée";
     default:
       return status;
   }

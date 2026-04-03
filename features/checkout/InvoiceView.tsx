@@ -32,10 +32,10 @@ export function InvoiceView({ order }: InvoiceViewProps) {
       <div className="grid gap-5 lg:grid-cols-[1fr,1.1fr]">
         <div className="space-y-3 rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
           <p className="text-xs uppercase tracking-[0.4em] text-black/40">Émetteur</p>
-          <p className="text-base font-semibold text-black">Khidma Service</p>
-          <p className="text-sm text-black/60">Plateau, Abidjan</p>
-          <p className="text-sm text-black/60">Email: contact@khidma.shop</p>
-          <p className="text-sm text-black/60">Tél: +225 27 20 00 00 00</p>
+          <p className="text-base font-semibold text-black">Khidma Shop</p>
+          <p className="text-sm text-black/60">Rufisque Tally Bou Bess , pres Usine vinaigre</p>
+          <p className="text-sm text-black/60">Email: bakarydiassy28@gmail.com</p>
+          <p className="text-sm text-black/60">Tél: +221 77 862 70 52</p>
         </div>
         <div className="space-y-3 rounded-3xl border border-black/10 bg-white p-5 shadow-sm">
           <p className="text-xs uppercase tracking-[0.4em] text-black/40">Facturation</p>
@@ -64,7 +64,7 @@ export function InvoiceView({ order }: InvoiceViewProps) {
             </div>
             <div className="col-span-2">
               <p className="text-xs uppercase text-black/40">Référence</p>
-              <p className="font-semibold text-black">{order.reference || "Aucune"}</p>
+              <p className="font-semibold text-black">{order.id.toUpperCase()}</p>
             </div>
           </div>
         </div>

@@ -1,133 +1,62 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Package2 } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { listOrders } from "@/services/order.service";
-import { useAuthStore } from "@/stores/useAuthStore";
-import { useOrderStore } from "@/stores/useOrderStore";
-import { formatCurrency, formatDate, orderLabel, orderStatusLabel } from "@/utils/format";
-import { Loader } from "@/components/ui/Loader";
+import Link from 'next/link';
+import { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
+import { listOrders } from '@/services/order.service';
+import { Order } from '@/types/order';
+import { Loader } from '@/components/ui/Loader';
+import { formatCurrency, formatDate, orderLabel, orderStatusLabel } from '@/utils/format';
+import { statusTone } from '@/utils/identity';
 
 export default function OrdersPage() {
-  const router = useRouter();
-  const user = useAuthStore((state) => state.user);
-  const isHydrated = useAuthStore((state) => state.isHydrated);
-  const localOrders = useOrderStore((state) => state.orders);
-
-  const { data: remoteOrders = [], isLoading } = useQuery({
-    queryKey: ["customer-orders"],
+  const { data: orders = [], isLoading } = useQuery({
+    queryKey: ['orders'],
     queryFn: listOrders,
   });
 
-  const orders = useMemo<(typeof remoteOrders)[number][]>(() => {
-    const merged = [...localOrders, ...remoteOrders];
-    const unique = new Map<string, (typeof merged)[number]>();
-
-    merged.forEach((order) => {
-      unique.set(order.id, order);
-    });
-
-    const allOrders = Array.from(unique.values());
-
-    if (!user) return allOrders;
-    return allOrders.filter((order) => order.phone === user.phone);
-  }, [localOrders, remoteOrders, user]);
-
-  const [statusFilter, setStatusFilter] = useState<"PENDING" | "CONFIRMED" | "DELIVERED">("DELIVERED");
-  const filteredOrders = useMemo(
-    () => orders.filter((order) => order.status === statusFilter),
-    [orders, statusFilter],
-  );
-
-  const statusOptions = [
-    { value: "PENDING" as const, label: "En attente" },
-    { value: "CONFIRMED" as const, label: "En cours" },
-    { value: "DELIVERED" as const, label: "Livré" },
-  ];
-
-  useEffect(() => {
-    if (isHydrated && !user) {
-      router.replace("/auth");
-    }
-  }, [isHydrated, router, user]);
-
-  if (!isHydrated) {
-    return (
-      <div className="container-safe py-6">
-        <div className="card-base p-6 text-sm text-black/55">Chargement des commandes...</div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
+  if (isLoading) {
+    return <Loader className="py-10" />;
   }
 
   return (
-    <div className="container-safe space-y-6 py-6 pb-28 md:pb-8">
-      <button onClick={() => router.back()} className="btn-base border border-black/10 bg-white px-4 py-2 text-sm">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Retour
-      </button>
-
-      <div>
-        <p className="text-xs uppercase tracking-[0.3em] text-black/45">Commandes</p>
-        <h1 className="section-title">Historique de vos achats</h1>
+    <div className="container-safe space-y-6 py-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] uppercase tracking-[0.4em] text-black/40">Mes commandes</p>
+          <h1 className="text-2xl font-bold tracking-tight">Historique</h1>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {statusOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setStatusFilter(option.value)}
-            className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.4em] transition ${
-              statusFilter === option.value
-                ? "border-black bg-black text-white"
-                : "border-black/10 bg-white text-black hover:border-black/40"
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-
-      {isLoading ? (
-        <Loader className="py-10" />
-      ) : filteredOrders.length ? (
-        <div className="grid gap-3">
-          {filteredOrders.map((order) => (
-            <Link key={order.id} href="/checkout" className="card-base block p-4 transition hover:border-black/30">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Package2 className="h-4 w-4" />
-                    <p className="text-sm font-medium">{orderLabel(order)}</p>
+      {orders.length === 0 ? (
+        <div className="text-center py-20">
+          <p className="text-lg font-medium text-black/60 mb-2">Aucune commande</p>
+          <Link href="/products" className="btn-base bg-black text-white px-6 py-3">
+            Découvrir le catalogue
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {orders.map((order: Order) => (
+            <Link
+              key={order.id}
+              href={`/orders/${order.id}`}
+              className="group block rounded-2xl border border-black/8 p-6 hover:border-black/20 hover:shadow-lg transition-all"
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${statusTone(order.status)}`}>
+                      {orderStatusLabel(order.status)}
+                    </span>
                   </div>
-                  <p className="mt-2 text-sm text-black/55">{formatDate(order.createdAt)}</p>
-                  <p className="mt-1 text-sm text-black/55">{order.items.length} article(s)</p>
+                  <p className="text-lg font-bold">{orderLabel(order)}</p>
+                  <p className="text-sm text-black/60 mt-1">{formatDate(order.createdAt)}</p>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold">{formatCurrency(order.total)}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.2em] text-black/45">
-                    {orderStatusLabel(order.status)}
-                  </p>
-                </div>
+                <p className="text-xl font-bold text-right">{formatCurrency(order.total)}</p>
               </div>
             </Link>
           ))}
-        </div>
-      ) : (
-        <div className="card-base p-6 text-sm text-black/60">
-          Aucune commande {statusOptions.find((opt) => opt.value === statusFilter)?.label?.toLowerCase()} pour le moment.
-          <div className="mt-4">
-            <Link href="/products" className="btn-base bg-black px-4 py-3 text-white">
-              Découvrir le catalogue
-            </Link>
-          </div>
         </div>
       )}
     </div>

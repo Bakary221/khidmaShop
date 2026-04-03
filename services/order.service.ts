@@ -31,6 +31,12 @@ export async function createOrder(payload: {
   });
 }
 
+export async function cancelOrder(id: string) {
+  return request<Order>(`/orders/${id}/cancel`, {
+    method: 'PATCH',
+  });
+}
+
 export async function updateOrderStatus(id: string, status: Order['status']) {
   return request<Order>(`/orders/${id}/status`, {
     method: 'PATCH',

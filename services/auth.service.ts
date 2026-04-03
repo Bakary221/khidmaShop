@@ -54,10 +54,13 @@ export async function logout() {
 
 export async function loadUserProfile(): Promise<AuthUser | null> {
   try {
+    console.log('Loading user profile...');
     const user = await getUserProfile();
+    console.log('User profile loaded:', user);
     useAuthStore.getState().setUser(user);
     return user;
-  } catch {
+  } catch (error) {
+    console.error('loadUserProfile error:', error);
     useAuthStore.getState().setUser(null);
     return null;
   }

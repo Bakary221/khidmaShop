@@ -17,6 +17,7 @@ export default function AdminRootPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [nextPath, setNextPath] = useState<string | null>(null);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -25,11 +26,12 @@ export default function AdminRootPage() {
 
   useEffect(() => {
     console.log('Admin page mount:', { user: user?.role, nextPath });
-    if (user?.role === "ADMIN") {
+    if (user?.role === "ADMIN" && !isRedirecting) {
       console.log('Auto-redirect dashboard');
-      router.push(nextPath ?? "/admin/dashboard");
+      setIsRedirecting(true);
+      router.replace(nextPath ?? "/admin/dashboard");
     }
-  }, [user?.role, nextPath, router]);
+  }, [user?.role, nextPath, router, isRedirecting]);
 
   const mutation = useMutation({
     mutationFn: adminLogin,

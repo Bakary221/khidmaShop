@@ -38,7 +38,7 @@ export async function adminLogin(payload: { email: string; password: string }): 
 
   useAuthStore.getState().setToken(data.accessToken);
   useAuthStore.getState().setUser({ id: '', name: 'Admin', phone: '', email: '', role: data.role });
-  await loadUserProfile();
+  await loadUserProfile({ skipRefresh: true });
   return data;
 }
 

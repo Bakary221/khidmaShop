@@ -6,16 +6,21 @@ export function middleware(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
 
+  if (request.nextUrl.pathname === "/admin" && (token || (refreshToken && role === "ADMIN"))) {
+    return NextResponse.redirect(new URL("/admin/dashboard", request.url));
+  }
+
   if (request.nextUrl.pathname.startsWith("/admin") && request.nextUrl.pathname !== "/admin") {
-    if (token || (refreshToken && role === "ADMIN")) {
-      return NextResponse.next();
+    if (!token && !(refreshToken && role === "ADMIN")) {
+      const redirectUrl = new URL("/admin", request.url);
+      redirectUrl.searchParams.set("next", request.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
     }
-    const redirectUrl = new URL("/admin", request.url);
-    redirectUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.next();
   }
 
   return NextResponse.next();
+
 }
 
 export const config = {

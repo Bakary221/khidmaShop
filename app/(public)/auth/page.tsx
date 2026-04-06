@@ -158,7 +158,7 @@ export default function AuthPage() {
                     setIsPhoneDirty(true);
                   }
                 }}
-                placeholder={`${selectedCountry.dial} 700 000 000`}
+                placeholder="700 000 000"
                 className="input-base w-full"
               />
               {showInvalidPhone && (

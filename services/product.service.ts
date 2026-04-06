@@ -23,6 +23,7 @@ type ProductPayload = {
   slug?: string;
   price?: number;
   images?: string[];
+  existingImages?: string[];
   categoryId?: string;
   brand?: string;
   description?: string;
@@ -34,7 +35,9 @@ type ProductPayload = {
   active?: boolean;
 };
 
-export async function createProduct(payload: ProductPayload) {
+type ProductRequestPayload = ProductPayload | FormData;
+
+export async function createProduct(payload: ProductRequestPayload) {
   const product = await request<Product>('/products', {
     method: 'POST',
     body: payload,
@@ -42,7 +45,7 @@ export async function createProduct(payload: ProductPayload) {
   return normalizeProduct(product);
 }
 
-export async function updateProduct(id: string, payload: ProductPayload) {
+export async function updateProduct(id: string, payload: ProductRequestPayload) {
   const product = await request<Product>(`/products/${id}`, {
     method: 'PUT',
     body: payload,

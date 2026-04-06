@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -24,10 +24,31 @@ import { formatCurrency } from "@/utils/format";
 import { Product } from "@/types/product";
 import { useToast } from "@/hooks/useToast";
 
-const emptyForm = {
+type ProductImageItem = {
+  preview: string;
+  file?: File;
+};
+
+type ProductForm = {
+  name: string;
+  price: number;
+  images: ProductImageItem[];
+  categoryId: string;
+  categoryName: string;
+  brand: string;
+  description: string;
+  sizes: string;
+  colors: string;
+  featured: boolean;
+  stock: number;
+  rating: number;
+  active: boolean;
+};
+
+const emptyForm: ProductForm = {
   name: "",
   price: 0,
-  images: [""],
+  images: [],
   categoryId: "",
   categoryName: "",
   brand: "",
@@ -40,14 +61,11 @@ const emptyForm = {
   active: true,
 };
 
-type ProductForm = typeof emptyForm;
-
-function readFileAsDataUrl(file: File) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Impossible de lire cette image."));
-    reader.readAsDataURL(file);
+function cleanupImagePreviews(images: ProductImageItem[]) {
+  images.forEach((item) => {
+    if (item.file) {
+      URL.revokeObjectURL(item.preview);
+    }
   });
 }
 
@@ -72,7 +90,10 @@ export default function AdminProductsPage() {
 
   const reset = () => {
     setEditing(null);
-    setForm(emptyForm);
+    setForm((current) => {
+      cleanupImagePreviews(current.images);
+      return emptyForm;
+    });
   };
 
   const handleClose = () => {
@@ -82,13 +103,38 @@ export default function AdminProductsPage() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
-      const { categoryName, ...formPayload } = form;
+      const payload = new FormData();
+      const sizes = form.sizes
+        .split(",")
+        .map((size) => size.trim())
+        .filter(Boolean);
+      const colors = form.colors
+        .split(",")
+        .map((color) => color.trim())
+        .filter(Boolean);
+      const existingImages = form.images
+        .filter((item) => !item.file)
+        .map((item) => item.preview);
 
-      const payload = {
-        ...formPayload,
-        sizes: formPayload.sizes.split(",").map((s) => s.trim()).filter(Boolean),
-        colors: formPayload.colors.split(",").map((c) => c.trim()).filter(Boolean),
-      };
+      payload.append("name", form.name);
+      payload.append("price", String(form.price));
+      payload.append("categoryId", form.categoryId);
+      payload.append("brand", form.brand);
+      payload.append("description", form.description);
+      payload.append("sizes", JSON.stringify(sizes));
+      payload.append("colors", JSON.stringify(colors));
+      payload.append("stock", String(form.stock));
+      payload.append("rating", String(form.rating));
+      payload.append("featured", String(form.featured));
+      payload.append("active", String(form.active));
+      payload.append("existingImages", JSON.stringify(existingImages));
+
+      form.images.forEach((item) => {
+        if (item.file) {
+          payload.append("images", item.file);
+        }
+      });
+
       return editing ? updateProduct(editing.id, payload) : createProduct(payload);
     },
     onSuccess: async () => {
@@ -124,29 +170,37 @@ export default function AdminProductsPage() {
   });
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
+    const files = Array.from(e.target.files ?? []);
+    if (!files.length) return;
     setUploadingImages(true);
 
     try {
-      const urls: string[] = [];
-      for (const file of Array.from(e.target.files)) {
-        const url = await readFileAsDataUrl(file);
-        urls.push(url);
-      }
+      const items = files.map((file) => ({
+        preview: URL.createObjectURL(file),
+        file,
+      }));
       setForm((prev) => ({
         ...prev,
-        images: [...prev.images.filter(i => i), ...urls],
+        images: [...prev.images, ...items],
       }));
     } finally {
+      e.target.value = "";
       setUploadingImages(false);
     }
   };
 
   const removeImage = (index: number) => {
-    setForm((prev) => ({
-      ...prev,
-      images: prev.images.filter((_, i) => i !== index),
-    }));
+    setForm((prev) => {
+      const target = prev.images[index];
+      if (target?.file) {
+        URL.revokeObjectURL(target.preview);
+      }
+
+      return {
+        ...prev,
+        images: prev.images.filter((_, i) => i !== index),
+      };
+    });
   };
 
   // Pagination logic removed - handled by AdminDataDisplay
@@ -157,7 +211,7 @@ export default function AdminProductsPage() {
       setForm({
         name: product.name,
         price: product.price,
-        images: product.images,
+        images: product.images.map((image) => ({ preview: image })),
         categoryId: product.categoryId,
         categoryName: product.categoryName,
         brand: product.brand,
@@ -431,23 +485,22 @@ export default function AdminProductsPage() {
               <h3 className="font-semibold text-black mb-3">Images</h3>
               <div className="space-y-3">
                 {form.images.map((img, i) => (
-                  img && (
-                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden border border-black/10">
-                      <Image
-                        src={img}
-                        alt={`Preview ${i}`}
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(i)}
-                        className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 hover:opacity-100 transition-opacity"
-                      >
-                        <X className="h-4 w-4 text-white" />
-                      </button>
-                    </div>
-                  )
+                  <div key={`${img.preview}-${i}`} className="relative w-20 h-20 overflow-hidden rounded-lg border border-black/10">
+                    <Image
+                      src={img.preview}
+                      alt={`Preview ${i}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(i)}
+                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity hover:opacity-100"
+                    >
+                      <X className="h-4 w-4 text-white" />
+                    </button>
+                  </div>
                 ))}
                 <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-black/20 rounded-lg cursor-pointer hover:border-black/40 transition-colors">
                   <div className="text-center">

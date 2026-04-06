@@ -41,8 +41,8 @@ export default function HomePage() {
       >
         <div className="absolute inset-0">
           <Image
-            src="/assets/products/chemise-1.jpg"
-            alt="Habillement homme KHIDMA SHOP"
+            src="/assets/home/acceuilBanner.jpg"
+            alt="Bannière d'accueil KHIDMA SHOP"
             fill
             sizes="(min-width: 1280px) 1080px, (min-width: 768px) 720px, 100vw"
             priority

@@ -11,14 +11,17 @@ type ModalProps = {
   title?: string;
   children: ReactNode;
   className?: string;
+  centered?: boolean;
 };
 
-export function Modal({ open, onClose, title, children, className }: ModalProps) {
+export function Modal({ open, onClose, title, children, className, centered = false }: ModalProps) {
   return (
     <AnimatePresence>
       {open ? (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/45 p-4 pt-20 backdrop-blur-sm sm:items-center sm:pt-6"
+          className={centered
+            ? "fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
+            : "fixed inset-0 z-50 flex items-start justify-center bg-black/45 p-4 pt-20 backdrop-blur-sm sm:items-center sm:pt-6"}
           onClick={onClose}
         >
           <motion.div
@@ -31,7 +34,7 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
             <div className="border-b border-black/10 px-4 py-4 sm:px-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                {title ? <h3 className="text-lg font-semibold tracking-tight">{title}</h3> : null}
+                  {title ? <h3 className="text-lg font-semibold tracking-tight">{title}</h3> : null}
                 </div>
                 <button type="button" onClick={onClose} className="rounded-full border border-black/10 p-2 text-black/60 transition hover:bg-black/5 hover:text-black">
                   <X className="h-5 w-5" />

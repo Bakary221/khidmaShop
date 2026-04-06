@@ -26,7 +26,6 @@ export const useAuthStore = create<AuthState>()((set) => ({
   isHydrated: true,
   setHydrated: (value) => set({ isHydrated: value }),
   setToken: (token) => {
-    console.log('AuthStore setToken:', !!token);
     set({
       token,
       accessTokenExpiresAt: getExpirationFromToken(token),

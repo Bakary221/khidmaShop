@@ -25,9 +25,7 @@ export default function AdminRootPage() {
   }, []);
 
   useEffect(() => {
-    console.log('Admin page mount:', { user: user?.role, nextPath });
     if (user?.role === "ADMIN" && !isRedirecting) {
-      console.log('Auto-redirect dashboard');
       setIsRedirecting(true);
       router.replace(nextPath ?? "/admin/dashboard");
     }

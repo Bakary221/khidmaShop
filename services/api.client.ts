@@ -1,9 +1,6 @@
 import { useAuthStore } from '@/stores/useAuthStore';
 
-const LOCAL_API_URL = 'http://localhost:3001';
-const FALLBACK_API_URL = process.env.NODE_ENV === 'development' ? LOCAL_API_URL : '';
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? FALLBACK_API_URL;
-const API_PREFIX = BASE_URL ? '' : '/api';
+const API_PREFIX = '/api';
 
 type RequestOptions = {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
@@ -35,10 +32,6 @@ async function ensureValidAccessToken() {
 }
 
 export async function refreshTokens() {
-  if (!BASE_URL) {
-    throw new ApiError('Paramètres API manquants');
-  }
-
   if (refreshPromise) {
     return refreshPromise;
   }
@@ -46,7 +39,7 @@ export async function refreshTokens() {
   refreshPromise = (async () => {
     let response: Response;
     try {
-      response = await fetch(`${BASE_URL}/auth/refresh`, {
+      response = await fetch(`${API_PREFIX}/auth/refresh`, {
         method: 'POST',
         credentials: 'include',
         headers: {
@@ -99,8 +92,7 @@ function getStoredToken() {
 }
 
 function buildUrl(path: string) {
-  const prefix = BASE_URL || API_PREFIX;
-  return `${prefix}${path}`;
+  return `${API_PREFIX}${path}`;
 }
 
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {

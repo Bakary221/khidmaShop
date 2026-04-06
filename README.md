@@ -74,12 +74,12 @@ scripts/             # `create-zip.sh`
 - `/admin/dashboard`, `/admin/products`, `/admin/categories`, `/admin/orders`, `/admin/users`
 
 ## Configuration & env
-- `NEXT_PUBLIC_API_URL` (optionnel) : URL du backend (ex : `https://api.khidma.shop`). Si absent, `next.config.mjs` rewrite `/api/*` vers `http://localhost:3001` en dev.
+- `NEXT_PUBLIC_API_URL` (recommandé en prod) : URL du backend Render utilisée comme destination du proxy `/api` de Next.js (ex : `https://api.khidma.shop`). Si absent, `next.config.mjs` rewrite `/api/*` vers `http://localhost:3001` en dev.
 - `NEXTAUTH` _non utilisé_ ; les cookies sont gérés côté backend.
 
 ## Démarrage local
 1. `npm install`
-2. Ajuster `NEXT_PUBLIC_API_URL` si besoin (le mode dev peut pointer sur `http://localhost:3001`).
+2. Ajuster `NEXT_PUBLIC_API_URL` si besoin, surtout si tu veux pointer vers le backend Render.
 3. `npm run dev` (http://localhost:3000)
 4. `npm run build` / `npm run start` pour prod
 
@@ -91,7 +91,7 @@ scripts/             # `create-zip.sh`
 - `npm run zip` (script `scripts/create-zip.sh` crée un `.zip` excluding `node_modules`, `.next`, `.git`)
 
 ## Notes de production
-- **Cookies** : front dépend des cookies `khidma_access_token` + `khidma_role` + `refresh_token` envoyés par le backend (`credentials: 'include'`).
+- **Cookies** : le front appelle l'API via `/api/*` sur le domaine Vercel, qui relaie vers Render. Les cookies `khidma_access_token` + `khidma_role` + `refresh_token` restent donc first-party côté navigateur.
 - **Middleware admin** : ne laisse passer `/admin/*` que si `khidma_role === 'ADMIN'` et qu’un `refresh_token` existe dans les cookies.
 - **OTP** : vérifier les codes dans les logs backend quand Vonage n’est pas configuré.
 - **Checkout** : bloque tant que la géolocalisation n’est pas obtenue, synchronise le profil (nom/adresse) si besoin.

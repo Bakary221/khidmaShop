@@ -14,11 +14,11 @@ const nextConfig = {
     ],
   },
   async rewrites() {
-    if (process.env.NEXT_PUBLIC_API_URL) {
-      return [];
-    }
+    const targetOrigin = (
+      process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") ||
+      (process.env.NODE_ENV === "development" ? "http://localhost:3001" : "")
+    );
 
-    const targetOrigin = process.env.NODE_ENV === "development" ? "http://localhost:3001" : "";
     if (!targetOrigin) {
       return [];
     }

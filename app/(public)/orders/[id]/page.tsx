@@ -138,7 +138,7 @@ export default function OrderDetailPage() {
                 <div key={item.id} className="flex items-center gap-3 bg-white px-4 py-3">
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-black/8 bg-black/5">
                     {image ? (
-                      <img src={image} alt={item.productSnapshot.name} className="h-full w-full object-contain" />
+                      <img src={image} alt={item.productSnapshot.name} className="h-full w-full object-cover" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
                         <Package2 className="h-5 w-5 text-black/20" />

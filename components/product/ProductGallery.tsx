@@ -20,7 +20,7 @@ export function ProductGallery({ product }: ProductGalleryProps) {
             src={product.images[active]}
             alt={product.name}
             fill
-            className="object-contain"
+            className="object-cover"
             sizes="(max-width: 768px) 100vw, 50vw"
             priority
           />
@@ -37,7 +37,7 @@ export function ProductGallery({ product }: ProductGalleryProps) {
               active === index ? "border-black" : "border-black/10",
             )}
           >
-            <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-contain" sizes="80px" />
+            <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-cover" sizes="80px" />
           </button>
         ))}
       </div>

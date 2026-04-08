@@ -278,7 +278,7 @@ export default function AdminProductsPage() {
                           src={product.images[0]}
                           alt={product.name}
                           fill
-                          className="object-contain"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="h-full flex items-center justify-center text-black/20">
@@ -351,7 +351,7 @@ export default function AdminProductsPage() {
                           src={product.images[0]}
                           alt={product.name}
                           fill
-                          className="object-contain"
+                          className="object-cover"
                         />
                       ) : (
                         <div className="h-full flex items-center justify-center text-black/20">
@@ -500,7 +500,7 @@ export default function AdminProductsPage() {
                       src={img.preview}
                       alt={`Preview ${i}`}
                       fill
-                      className="object-contain"
+                      className="object-cover"
                       unoptimized
                     />
                     <button

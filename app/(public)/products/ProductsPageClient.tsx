@@ -106,9 +106,6 @@ export function ProductsPageClient() {
             <Link href="/cart" className="btn-base bg-white px-5 py-3 text-black">
               Voir le panier
             </Link>
-            <Link href="/auth" className="btn-base border border-white/15 bg-white/5 px-5 py-3 text-white backdrop-blur-sm">
-              Mon compte
-            </Link>
           </div>
         </div>
       </section>

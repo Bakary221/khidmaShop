@@ -5,7 +5,7 @@ const footerLinks = [
   { href: "/products", label: "Catalogue" },
   { href: "/cart", label: "Panier" },
   { href: "/checkout", label: "Commander" },
-  { href: "/auth", label: "Mon compte" },
+  { href: "/orders", label: "Mes commandes" },
 ];
 
 const socialIcons = [

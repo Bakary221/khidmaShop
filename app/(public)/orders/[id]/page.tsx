@@ -12,7 +12,6 @@ import { formatCurrency, formatDate, orderLabel, orderStatusLabel } from '@/util
 import { statusTone } from '@/utils/identity';
 import { Loader } from '@/components/ui/Loader';
 import { useOrderStore } from '@/stores/useOrderStore';
-import { useAuthStore } from '@/stores/useAuthStore';
 
 const CANCEL_WINDOW_MS = 30 * 60 * 1000;
 
@@ -31,7 +30,6 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const params = useParams();
   const orderId = params.id as string;
-  const user = useAuthStore((state) => state.user);
   
   const { data: order, isLoading } = useQuery({
     queryKey: ['order', orderId],
@@ -81,7 +79,7 @@ export default function OrderDetailPage() {
     );
   }
 
-  if (!order || (user && order.phone !== user.phone)) {
+  if (!order) {
     return (
       <div className="container-safe py-6">
         <div className="card-base p-6 text-sm text-black/55">
@@ -140,7 +138,7 @@ export default function OrderDetailPage() {
                 <div key={item.id} className="flex items-center gap-3 bg-white px-4 py-3">
                   <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-black/8 bg-black/5">
                     {image ? (
-                      <img src={image} alt={item.productSnapshot.name} className="h-full w-full object-cover" />
+                      <img src={image} alt={item.productSnapshot.name} className="h-full w-full object-contain" />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center">
                         <Package2 className="h-5 w-5 text-black/20" />

@@ -7,7 +7,15 @@ export async function listOrders() {
 }
 
 export async function getOrderById(id: string) {
-  return request<Order>(`/orders/${id}`);
+  return request<Order>(`/orders/${id}`, { skipAuth: true });
+}
+
+export async function searchOrdersByPhone(phone: string) {
+  return request<Order[]>('/orders/search', {
+    method: 'POST',
+    body: { phone },
+    skipAuth: true,
+  });
 }
 
 export async function createOrder(payload: {

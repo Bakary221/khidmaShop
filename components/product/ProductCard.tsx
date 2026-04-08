@@ -26,7 +26,7 @@ export function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             sizes="(min-width: 640px) 280px, 200px"
-            className="object-cover transition duration-300 hover:scale-[1.03]"
+            className="object-contain transition duration-300 hover:scale-[1.03]"
             loading="lazy"
           />
         </div>

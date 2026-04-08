@@ -11,6 +11,7 @@ import {
   Star,
   Upload,
   X,
+  Camera,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { AdminHeader } from "@/components/admin/AdminHeader";
@@ -175,13 +176,22 @@ export default function AdminProductsPage() {
     setUploadingImages(true);
 
     try {
-      const items = files.map((file) => ({
+      const currentCount = form.images.length;
+      const remainingSlots = 5 - currentCount;
+      const filesToAdd = files.slice(0, remainingSlots);
+      
+      if (filesToAdd.length === 0) {
+        toast.error("Images", "Maximum 5 images autorisées");
+        return;
+      }
+
+      const items = filesToAdd.map((file) => ({
         preview: URL.createObjectURL(file),
         file,
       }));
       setForm((prev) => ({
         ...prev,
-        images: [...prev.images, ...items],
+        images: [...prev.images, ...items].slice(0, 5),
       }));
     } finally {
       e.target.value = "";
@@ -268,7 +278,7 @@ export default function AdminProductsPage() {
                           src={product.images[0]}
                           alt={product.name}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                         />
                       ) : (
                         <div className="h-full flex items-center justify-center text-black/20">
@@ -341,7 +351,7 @@ export default function AdminProductsPage() {
                           src={product.images[0]}
                           alt={product.name}
                           fill
-                          className="object-cover"
+                          className="object-contain"
                         />
                       ) : (
                         <div className="h-full flex items-center justify-center text-black/20">
@@ -482,7 +492,7 @@ export default function AdminProductsPage() {
 
             {/* Images */}
             <div>
-              <h3 className="font-semibold text-black mb-3">Images</h3>
+              <h3 className="font-semibold text-black mb-3">Images (max 5)</h3>
               <div className="space-y-3">
                 {form.images.map((img, i) => (
                   <div key={`${img.preview}-${i}`} className="relative w-20 h-20 overflow-hidden rounded-lg border border-black/10">
@@ -490,7 +500,7 @@ export default function AdminProductsPage() {
                       src={img.preview}
                       alt={`Preview ${i}`}
                       fill
-                      className="object-cover"
+                      className="object-contain"
                       unoptimized
                     />
                     <button
@@ -502,20 +512,30 @@ export default function AdminProductsPage() {
                     </button>
                   </div>
                 ))}
-                <label className="flex items-center justify-center w-full px-4 py-6 border-2 border-dashed border-black/20 rounded-lg cursor-pointer hover:border-black/40 transition-colors">
-                  <div className="text-center">
-                    <Upload className="h-6 w-6 mx-auto text-black/40 mb-2" />
-                    <span className="text-sm font-medium text-black">Ajouter des images</span>
-                  </div>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    disabled={uploadingImages}
-                    className="hidden"
-                  />
-                </label>
+                {form.images.length < 5 && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => document.getElementById('camera-input')?.click()}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-black/20 rounded-lg cursor-pointer hover:border-black/40 transition-colors bg-black/5"
+                    >
+                      <Camera className="h-5 w-5 text-black/60" />
+                      <span className="text-sm font-medium text-black">Prendre une photo</span>
+                    </button>
+                    <input
+                      id="camera-input"
+                      type="file"
+                      accept="image/*"
+                      capture
+                      onChange={handleImageUpload}
+                      disabled={uploadingImages}
+                      className="hidden"
+                    />
+                  </>
+                )}
+                {form.images.length === 0 && (
+                  <p className="text-xs text-black/50 text-center">Utilisez la caméra pour prendre des photos du produit</p>
+                )}
               </div>
             </div>
 

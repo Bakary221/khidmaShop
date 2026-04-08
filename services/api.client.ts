@@ -121,7 +121,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   const payload = await response.json().catch(() => null);
 
-  if (response.status === 401 && !options.skipRefresh && !options.skipAuth) {
+  if (response.status === 401 && !options.skipAuth && !options.skipRefresh) {
     await refreshTokens();
     return request(path, { ...options, skipRefresh: true });
   }

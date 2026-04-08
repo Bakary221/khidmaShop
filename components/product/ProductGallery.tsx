@@ -15,12 +15,12 @@ export function ProductGallery({ product }: ProductGalleryProps) {
   return (
     <div className="space-y-3">
       <div className="grid gap-2 overflow-hidden rounded-3xl border border-black/10 bg-black/5">
-        <div className="relative aspect-[4/5] w-full">
+        <div className="relative w-full min-h-[300px] lg:min-h-[500px]">
           <Image
             src={product.images[active]}
             alt={product.name}
             fill
-            className="object-cover"
+            className="object-contain"
             sizes="(max-width: 768px) 100vw, 50vw"
             priority
           />
@@ -37,7 +37,7 @@ export function ProductGallery({ product }: ProductGalleryProps) {
               active === index ? "border-black" : "border-black/10",
             )}
           >
-            <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-cover" sizes="80px" />
+            <Image src={image} alt={`${product.name} ${index + 1}`} fill className="object-contain" sizes="80px" />
           </button>
         ))}
       </div>

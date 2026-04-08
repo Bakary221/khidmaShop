@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, LayoutGrid, ShoppingBag, UserCircle2 } from "lucide-react";
+import { Home, LayoutGrid, ShoppingBag, History } from "lucide-react";
 import { cn } from "@/utils/cn";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
@@ -10,8 +10,8 @@ import { useUiStore } from "@/stores/useUiStore";
 const items = [
   { href: "/", label: "Home", icon: Home },
   { href: "/products", label: "Cat.", icon: LayoutGrid },
-  { href: "/cart", label: "Panier", icon: ShoppingBag },
-  { href: "/profile", label: "Profil", icon: UserCircle2 },
+  { href: "/orders", label: "Commandes", icon: History },
+  { href: "/cart", label: "Panier", icon: ShoppingBag, isCart: true },
 ];
 
 export function MobileNavbar() {
@@ -25,8 +25,9 @@ export function MobileNavbar() {
         {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
+          const isCart = 'isCart' in item && item.isCart;
 
-          if (item.href === "/cart") {
+          if (isCart) {
             return (
               <button
                 key={item.href}
@@ -61,11 +62,6 @@ export function MobileNavbar() {
             >
               <div className="relative">
                 <Icon className="h-4 w-4" />
-                {item.href === "/cart" && itemCount > 0 ? (
-                  <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-1 text-[10px] text-white">
-                    {itemCount}
-                  </span>
-                ) : null}
               </div>
               <span>{item.label}</span>
             </Link>

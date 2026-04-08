@@ -2,8 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { History, ShoppingBag, UserCircle2 } from "lucide-react";
-import { useAuthStore } from "@/stores/useAuthStore";
+import { ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/useCartStore";
 import { useUiStore } from "@/stores/useUiStore";
 import { cn } from "@/utils/cn";
@@ -16,7 +15,6 @@ const links = [
 export function Navbar() {
   const pathname = usePathname();
   const itemCount = useCartStore((state) => state.items.reduce((sum, item) => sum + item.quantity, 0));
-  const user = useAuthStore((state) => state.user);
   const openCartDrawer = useUiStore((state) => state.openCartDrawer);
 
   return (
@@ -43,46 +41,17 @@ export function Navbar() {
             </Link>
           ))}
           <Link
-            href={user ? "/orders" : "/auth"}
+            href="/orders"
             className={cn(
               "rounded-full px-4 py-2 text-sm text-black/70 transition hover:bg-black/5 hover:text-black",
-              pathname === (user ? "/orders" : "/auth") && "bg-black text-white hover:bg-black",
+              pathname === "/orders" && "bg-black text-white hover:bg-black",
             )}
           >
-            {user ? "Commandes" : "Connexion"}
+            Commandes
           </Link>
-          {user ? (
-            <Link
-              href="/profile"
-              className={cn(
-                "rounded-full px-4 py-2 text-sm text-black/70 transition hover:bg-black/5 hover:text-black",
-                pathname === "/profile" && "bg-black text-white hover:bg-black",
-              )}
-            >
-              Profil
-            </Link>
-          ) : null}
         </nav>
 
         <div className="flex items-center gap-2">
-          {user ? (
-            <>
-              <Link
-                href="/profile"
-                className="hidden items-center gap-2 rounded-full border border-black/10 px-3 py-2 text-sm transition hover:border-black/30 hover:bg-black/5 md:flex"
-              >
-                <UserCircle2 className="h-4 w-4" />
-                <span className="max-w-[140px] truncate">{user.name}</span>
-              </Link>
-              <Link
-                href="/orders"
-                className="btn-base hidden border border-black/10 bg-white px-3 py-2 text-sm md:inline-flex"
-              >
-                <History className="mr-2 h-4 w-4" />
-                Commandes
-              </Link>
-            </>
-          ) : null}
           <button type="button" onClick={openCartDrawer} className="btn-base border border-black/10 bg-white px-3 py-2 text-sm">
             <span className="relative mr-2">
               <ShoppingBag className="h-4 w-4" />
@@ -94,11 +63,6 @@ export function Navbar() {
             </span>
             <span>Panier</span>
           </button>
-          {!user ? (
-            <Link href="/auth" className="btn-base bg-black px-4 py-2 text-sm text-white">
-              Connexion
-            </Link>
-          ) : null}
         </div>
       </div>
     </header>

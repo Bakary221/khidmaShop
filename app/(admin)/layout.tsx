@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       await endSession();
     } finally {
       clearSession();
-      router.push("/auth");
+      router.push("/admin");
       setShowLogoutConfirm(false);
     }
   };

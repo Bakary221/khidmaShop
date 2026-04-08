@@ -62,12 +62,6 @@ export default function HomePage() {
             <Link href="/products" className="btn-base w-full bg-white px-5 py-3 text-black sm:w-auto">
               Voir les produits <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
-            <Link
-              href="/auth"
-              className="btn-base w-full border border-white/15 bg-white/5 px-5 py-3 text-white backdrop-blur-sm sm:w-auto"
-            >
-              Mon compte
-            </Link>
           </div>
         </div>
       </section>

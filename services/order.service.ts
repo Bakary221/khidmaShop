@@ -39,9 +39,11 @@ export async function createOrder(payload: {
   });
 }
 
-export async function cancelOrder(id: string) {
+export async function cancelOrder(id: string, phone: string) {
   return request<Order>(`/orders/${id}/cancel`, {
     method: 'PATCH',
+    body: { phone },
+    skipAuth: true,
   });
 }
 

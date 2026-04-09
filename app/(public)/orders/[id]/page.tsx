@@ -60,7 +60,7 @@ export default function OrderDetailPage() {
   }, [order, remainingMs]);
 
   const cancelMutation = useMutation({
-    mutationFn: () => cancelOrder(orderId),
+    mutationFn: () => cancelOrder(orderId, order!.phone),
     onSuccess: (updated: Order) => {
       updateOrder(updated);
       router.back();

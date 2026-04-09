@@ -125,7 +125,7 @@ export function InvoiceView({ order }: InvoiceViewProps) {
                         <img 
                           src={item.productSnapshot.image} 
                           alt={item.productSnapshot.name}
-                          className="h-full w-full object-contain"
+                          className="h-full w-full object-cover"
                         />
                       </div>
                     )}

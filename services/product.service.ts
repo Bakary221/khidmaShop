@@ -18,6 +18,11 @@ export async function listFeaturedProducts() {
   return data.map(normalizeProduct);
 }
 
+type ProductImageItem = {
+  preview: string;
+  file?: File;
+};
+
 type ProductPayload = {
   name?: string;
   slug?: string;
@@ -37,18 +42,68 @@ type ProductPayload = {
 
 type ProductRequestPayload = ProductPayload | FormData;
 
-export async function createProduct(payload: ProductRequestPayload) {
+export async function createProduct(payload: ProductRequestPayload, images?: ProductImageItem[]) {
+  let finalPayload: ProductRequestPayload = payload;
+  
+  if (images && images.length > 0) {
+    const formData = new FormData();
+    const payloadObj = payload as ProductPayload;
+    
+    Object.entries(payloadObj).forEach(([key, value]) => {
+      if (value !== undefined) {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+    
+    images.forEach((img) => {
+      if (img.file) {
+        formData.append('images', img.file);
+      }
+    });
+    
+    finalPayload = formData;
+  }
+
   const product = await request<Product>('/products', {
     method: 'POST',
-    body: payload,
+    body: finalPayload,
   });
   return normalizeProduct(product);
 }
 
-export async function updateProduct(id: string, payload: ProductRequestPayload) {
+export async function updateProduct(id: string, payload: ProductRequestPayload, images?: ProductImageItem[]) {
+  let finalPayload: ProductRequestPayload = payload;
+  
+  if (images && images.length > 0) {
+    const formData = new FormData();
+    const payloadObj = payload as ProductPayload;
+    
+    Object.entries(payloadObj).forEach(([key, value]) => {
+      if (value !== undefined) {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+    
+    images.forEach((img) => {
+      if (img.file) {
+        formData.append('images', img.file);
+      }
+    });
+    
+    finalPayload = formData;
+  }
+
   const product = await request<Product>(`/products/${id}`, {
     method: 'PUT',
-    body: payload,
+    body: finalPayload,
   });
   return normalizeProduct(product);
 }

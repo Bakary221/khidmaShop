@@ -14,14 +14,12 @@ type ModalProps = {
   centered?: boolean;
 };
 
-export function Modal({ open, onClose, title, children, className, centered = false }: ModalProps) {
+export function Modal({ open, onClose, title, children, className, centered = true }: ModalProps) {
   return (
     <AnimatePresence>
       {open ? (
         <div
-          className={centered
-            ? "fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
-            : "fixed inset-0 z-50 flex items-start justify-center bg-black/45 p-4 pt-20 backdrop-blur-sm sm:items-center sm:pt-6"}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm"
           onClick={onClose}
         >
           <motion.div
@@ -31,7 +29,7 @@ export function Modal({ open, onClose, title, children, className, centered = fa
             className={cn("flex max-h-[90vh] w-full max-w-sm sm:max-w-2xl flex-col overflow-hidden rounded-[2rem] bg-white shadow-[0_24px_80px_rgba(15,15,20,0.18)]", className)}
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="border-b border-black/10 px-4 py-4 sm:px-6">
+            <div className="border-b border-black/10 px-4 py-4 sm:px-6 shrink-0">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   {title ? <h3 className="text-lg font-semibold tracking-tight">{title}</h3> : null}
@@ -41,7 +39,7 @@ export function Modal({ open, onClose, title, children, className, centered = fa
                 </button>
               </div>
             </div>
-            <div className="overflow-y-auto p-4 sm:p-6">{children}</div>
+            <div className="overflow-y-auto p-4 sm:p-6 max-h-[calc(90vh-80px)]">{children}</div>
           </motion.div>
         </div>
       ) : null}

@@ -3,7 +3,7 @@ import { ChevronRight } from "lucide-react";
 
 type AdminHeaderProps = {
   icon?: ReactNode;
-  title: string;
+  title?: string;
   description?: string;
   action?: ReactNode;
   breadcrumbs?: Array<{ label: string; href?: string }>;

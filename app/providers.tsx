@@ -5,7 +5,6 @@ import { ReactNode, useEffect, useState } from "react";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { loadUserProfile } from "@/services/auth.service";
-import { refreshTokens } from "@/services/api.client";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -13,23 +12,11 @@ export function Providers({ children }: { children: ReactNode }) {
   const isHydrated = useAuthStore((state) => state.isHydrated);
 
   useEffect(() => {
-    if (!isHydrated) return;
+    if (!isHydrated || !token) return;
 
-    const handleLoad = () => {
-      loadUserProfile().catch(() => {
-        useAuthStore.getState().setUser(null);
-      });
-    };
-
-    if (token) {
-      handleLoad();
-      return;
-    }
-
-    refreshTokens()
-      .catch(() => {
-        useAuthStore.getState().clearSession();
-      });
+    loadUserProfile().catch(() => {
+      useAuthStore.getState().setUser(null);
+    });
   }, [isHydrated, token]);
 
   return (

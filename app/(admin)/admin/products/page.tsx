@@ -12,6 +12,9 @@ import {
   Upload,
   X,
   Camera,
+  ChevronRight,
+  ChevronLeft,
+  Check,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { AdminHeader } from "@/components/admin/AdminHeader";
@@ -62,6 +65,8 @@ const emptyForm: ProductForm = {
   active: true,
 };
 
+const TOTAL_STEPS = 3;
+
 function cleanupImagePreviews(images: ProductImageItem[]) {
   images.forEach((item) => {
     if (item.file) {
@@ -88,9 +93,11 @@ export default function AdminProductsPage() {
   const [form, setForm] = useState<ProductForm>(emptyForm);
   const [uploadingImages, setUploadingImages] = useState<boolean>(false);
   const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
 
   const reset = () => {
     setEditing(null);
+    setCurrentStep(1);
     setForm((current) => {
       cleanupImagePreviews(current.images);
       return emptyForm;
@@ -99,76 +106,30 @@ export default function AdminProductsPage() {
 
   const handleClose = () => {
     setOpen(false);
-    reset();
+    setTimeout(reset, 300);
   };
 
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      const payload = new FormData();
-      const sizes = form.sizes
-        .split(",")
-        .map((size) => size.trim())
-        .filter(Boolean);
-      const colors = form.colors
-        .split(",")
-        .map((color) => color.trim())
-        .filter(Boolean);
-      const existingImages = form.images
-        .filter((item) => !item.file)
-        .map((item) => item.preview);
-
-      payload.append("name", form.name);
-      payload.append("price", String(form.price));
-      payload.append("categoryId", form.categoryId);
-      payload.append("brand", form.brand);
-      payload.append("description", form.description);
-      payload.append("sizes", JSON.stringify(sizes));
-      payload.append("colors", JSON.stringify(colors));
-      payload.append("stock", String(form.stock));
-      payload.append("rating", String(form.rating));
-      payload.append("featured", String(form.featured));
-      payload.append("active", String(form.active));
-      payload.append("existingImages", JSON.stringify(existingImages));
-
-      form.images.forEach((item) => {
-        if (item.file) {
-          payload.append("images", item.file);
-        }
+  const openModal = (product?: Product) => {
+    if (product) {
+      setEditing(product);
+      setForm({
+        name: product.name,
+        price: product.price,
+        images: [],
+        categoryId: product.categoryId,
+        categoryName: product.categoryName,
+        brand: product.brand,
+        description: product.description,
+        sizes: product.sizes.join(","),
+        colors: product.colors.join(","),
+        featured: product.featured,
+        stock: product.stock,
+        rating: product.rating,
+        active: product.active,
       });
-
-      return editing ? updateProduct(editing.id, payload) : createProduct(payload);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast.success("Produit", editing ? "mis à jour" : "créé");
-      handleClose();
-    },
-    onError: (error: unknown) => {
-      const message = error instanceof Error ? error.message : "Erreur de sauvegarde du produit";
-      toast.error("Produit", message);
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteProduct(id),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-      setDeleteTarget(null);
-      toast.success("Produit supprimé");
-    },
-  });
-
-  const toggleMutation = useMutation({
-    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      await toggleProductActive(id, active);
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
-      await queryClient.invalidateQueries({ queryKey: ["products"] });
-    },
-  });
+    }
+    setOpen(true);
+  };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? []);
@@ -213,49 +174,100 @@ export default function AdminProductsPage() {
     });
   };
 
-  // Pagination logic removed - handled by AdminDataDisplay
+  const handleCategoryChange = (categoryId: string) => {
+    const category = categories.find(c => c.id === categoryId);
+    setForm({
+      ...form,
+      categoryId,
+      categoryName: category?.name || "",
+    });
+  };
 
-  const openModal = (product?: Product) => {
-    if (product) {
-      setEditing(product);
-      setForm({
-        name: product.name,
-        price: product.price,
-        images: product.images.map((image) => ({ preview: image })),
-        categoryId: product.categoryId,
-        categoryName: product.categoryName,
-        brand: product.brand,
-        description: product.description,
-        sizes: product.sizes?.join(",") || "S,M,L",
-        colors: product.colors?.join(",") || "Noir,Blanc",
-        featured: product.featured,
-        stock: product.stock || 0,
-        rating: product.rating || 4.5,
-        active: product.active,
-      });
-    } else {
-      reset();
+  const saveMutation = useMutation({
+    mutationFn: async () => {
+      const payload = {
+        name: form.name,
+        price: form.price,
+        categoryId: form.categoryId,
+        brand: form.brand,
+        description: form.description,
+        sizes: form.sizes.split(",").map(s => s.trim()).filter(Boolean),
+        colors: form.colors.split(",").map(c => c.trim()).filter(Boolean),
+        featured: form.featured,
+        stock: form.stock,
+        rating: form.rating,
+        active: form.active,
+      };
+
+      if (editing) {
+        return updateProduct(editing.id, payload, form.images);
+      }
+      return createProduct(payload, form.images);
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success(editing ? "Produit mis à jour" : "Produit créé", form.name);
+      handleClose();
+    },
+    onError: (err: Error) => {
+      toast.error("Erreur", err.message);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast.success("Produit supprimé", deleteTarget?.name || "");
+      setDeleteTarget(null);
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, active }: { id: string; active: boolean }) => toggleProductActive(id, active),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      await queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+
+  const nextStep = () => {
+    if (currentStep < TOTAL_STEPS) {
+      setCurrentStep(currentStep + 1);
     }
-    setOpen(true);
+  };
+
+  const prevStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const canGoNext = () => {
+    if (currentStep === 1) {
+      return form.name.trim() && form.price > 0 && form.categoryId;
+    }
+    if (currentStep === 2) {
+      return form.sizes.trim() && form.colors.trim();
+    }
+    return true;
   };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <AdminHeader
-          icon={<Box className="h-6 w-6" />}
-          title="Produits"
-          description="Gérez le catalogue de votre boutique"
           breadcrumbs={[{ label: "Accueil" }, { label: "Produits" }]}
+          title="Produits"
         />
-        <AdminButton onClick={() => openModal()} className="h-fit">
+        <AdminButton onClick={() => openModal()} className="h-fit shrink-0">
           <Plus className="h-4 w-4" />
           Ajouter
         </AdminButton>
       </div>
 
-      {/* Products Section */}
       <AdminCard>
         <div className="space-y-6">
           <AdminDataDisplay
@@ -271,7 +283,6 @@ export default function AdminProductsPage() {
                     key={product.id}
                     className="rounded-lg border border-black/10 overflow-hidden hover:shadow-lg transition-shadow"
                   >
-                    {/* Product Image */}
                     <div className="relative h-48 bg-black/5 overflow-hidden">
                       {product.images?.[0] ? (
                         <Image
@@ -293,14 +304,11 @@ export default function AdminProductsPage() {
                         )}
                       </div>
                     </div>
-
-                    {/* Product Info */}
                     <div className="p-4">
                       <div className="mb-3">
                         <p className="text-sm text-black/60">{product.categoryName}</p>
                         <h3 className="font-bold text-black line-clamp-2">{product.name}</h3>
                       </div>
-
                       <div className="flex items-center justify-between mb-3">
                         <p className="font-bold text-lg text-black">{formatCurrency(product.price)}</p>
                         <div className="flex items-center gap-1">
@@ -308,15 +316,12 @@ export default function AdminProductsPage() {
                           <span className="text-sm font-medium text-black">{product.rating}</span>
                         </div>
                       </div>
-
                       <div className="flex items-center justify-between mb-4 text-xs">
                         <span className={`px-2 py-1 rounded-full font-medium ${product.active ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
                           {product.active ? "Actif" : "Inactif"}
                         </span>
                         <span className="text-black/60">{product.stock || 0} en stock</span>
                       </div>
-
-                      {/* Actions */}
                       <div className="flex gap-2">
                         <button
                           onClick={() => openModal(product)}
@@ -327,10 +332,9 @@ export default function AdminProductsPage() {
                         </button>
                         <button
                           onClick={() => setDeleteTarget(product)}
-                          className="flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium text-sm transition-colors"
+                          className="px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg font-medium text-sm transition-colors"
                         >
                           <Trash2 className="h-4 w-4" />
-                          Suppr.
                         </button>
                       </div>
                     </div>
@@ -339,11 +343,11 @@ export default function AdminProductsPage() {
               </div>
             )}
             renderList={(products) => (
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {products.map((product) => (
                   <div
                     key={product.id}
-                    className="flex items-center gap-4 p-4 rounded-lg border border-black/10 hover:bg-black/2.5 transition-colors"
+                    className="flex items-center gap-4 p-3 rounded-lg border border-black/10 hover:shadow-md transition-shadow"
                   >
                     <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border border-black/10">
                       {product.images?.[0] ? (
@@ -359,7 +363,6 @@ export default function AdminProductsPage() {
                         </div>
                       )}
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between">
                         <div>
@@ -397,18 +400,45 @@ export default function AdminProductsPage() {
         </div>
       </AdminCard>
 
-      {/* Modal */}
       {open && (
         <Modal
           open={open}
           onClose={handleClose}
           title={editing ? "Éditer le produit" : "Ajouter un produit"}
-          className="max-w-sm sm:max-w-3xl"
+          className="max-w-sm sm:max-w-2xl"
         >
           <div className="space-y-5">
-            {/* Basic Info */}
-            <div>
-              <h3 className="font-semibold text-black mb-3">Informations générales</h3>
+            {/* Step Indicator */}
+            <div className="flex items-center justify-between mb-6">
+              {[1, 2, 3].map((step) => (
+                <div key={step} className="flex items-center flex-1">
+                  <div
+                    className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
+                      currentStep >= step
+                        ? "bg-black text-white"
+                        : "bg-black/10 text-black/50"
+                    }`}
+                  >
+                    {currentStep > step ? <Check className="h-4 w-4" /> : step}
+                  </div>
+                  {step < TOTAL_STEPS && (
+                    <div
+                      className={`flex-1 h-1 mx-2 rounded ${
+                        currentStep > step ? "bg-black" : "bg-black/10"
+                      }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between text-xs text-black/60 mb-4">
+              <span>Informations</span>
+              <span>Détails</span>
+              <span>Options</span>
+            </div>
+
+            {/* Step 1: Basic Info */}
+            {currentStep === 1 && (
               <div className="space-y-4">
                 <AdminInput
                   label="Nom du produit"
@@ -423,125 +453,118 @@ export default function AdminProductsPage() {
                   onChange={(e) => setForm({ ...form, brand: e.target.value })}
                   placeholder="Ex: Nike"
                 />
-                <AdminInput
-                  label="Catégorie"
-                  value={form.categoryId}
-                  onChange={(e) => {
-                    const cat = categories.find(c => c.id === e.target.value);
-                    setForm({
-                      ...form,
-                      categoryId: e.target.value,
-                      categoryName: cat?.name || "",
-                    });
-                  }}
-                  options={categories.map(c => ({ label: c.name, value: c.id }))}
-                />
-              </div>
-            </div>
-
-            {/* Pricing & Stock */}
-            <div>
-              <h3 className="font-semibold text-black mb-3">Prix et stock</h3>
-              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-black/70 mb-1">Catégorie</label>
+                  <select
+                    value={form.categoryId}
+                    onChange={(e) => handleCategoryChange(e.target.value)}
+                    className="input-base w-full"
+                    required
+                  >
+                    <option value="">Sélectionner une catégorie</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <AdminInput
                   label="Prix"
                   type="number"
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) })}
-                  placeholder="0.00"
-                  min={0}
-                />
-                <AdminInput
-                  label="Stock"
-                  type="number"
-                  value={form.stock}
-                  onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) })}
+                  onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
                   placeholder="0"
-                  min={0}
+                  required
                 />
+                <div>
+                  <label className="block text-xs font-medium text-black/70 mb-1">Description</label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="input-base h-24 w-full resize-none"
+                    placeholder="Description du produit..."
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Details */}
-            <div>
-              <h3 className="font-semibold text-black mb-3">Détails</h3>
+            {/* Step 2: Details */}
+            {currentStep === 2 && (
               <div className="space-y-4">
                 <AdminInput
-                  label="Description"
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Description du produit..."
-                  textarea
-                />
-                <AdminInput
-                  label="Tailles disponibles"
+                  label="Tailles"
                   value={form.sizes}
                   onChange={(e) => setForm({ ...form, sizes: e.target.value })}
                   placeholder="S,M,L,XL"
                   helperText="Séparées par des virgules"
                 />
                 <AdminInput
-                  label="Couleurs disponibles"
+                  label="Couleurs"
                   value={form.colors}
                   onChange={(e) => setForm({ ...form, colors: e.target.value })}
                   placeholder="Noir,Blanc,Bleu"
                   helperText="Séparées par des virgules"
                 />
-              </div>
-            </div>
-
-            {/* Images */}
-            <div>
-              <h3 className="font-semibold text-black mb-3">Images (max 5)</h3>
-              <div className="space-y-3">
-                {form.images.map((img, i) => (
-                  <div key={`${img.preview}-${i}`} className="relative w-20 h-20 overflow-hidden rounded-lg border border-black/10">
-                    <Image
-                      src={img.preview}
-                      alt={`Preview ${i}`}
-                      fill
-                      className="object-cover"
-                      unoptimized
-                    />
-                    <button
-                      type="button"
-                      onClick={() => removeImage(i)}
-                      className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity hover:opacity-100"
-                    >
-                      <X className="h-4 w-4 text-white" />
-                    </button>
+                <AdminInput
+                  label="Stock"
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
+                  placeholder="0"
+                />
+                <div>
+                  <h3 className="font-semibold text-black mb-3">Images (max 5)</h3>
+                  <div className="space-y-3">
+                    {form.images.map((img, i) => (
+                      <div key={`${img.preview}-${i}`} className="relative w-20 h-20 overflow-hidden rounded-lg border border-black/10">
+                        <Image
+                          src={img.preview}
+                          alt={`Preview ${i}`}
+                          fill
+                          className="object-cover"
+                          unoptimized
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 transition-opacity hover:opacity-100"
+                        >
+                          <X className="h-4 w-4 text-white" />
+                        </button>
+                      </div>
+                    ))}
+                    {form.images.length < 5 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => document.getElementById('camera-input')?.click()}
+                          className="flex-1 flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-black/20 rounded-lg cursor-pointer hover:border-black/40 transition-colors bg-black/5"
+                        >
+                          <Camera className="h-5 w-5 text-black/60" />
+                          <span className="text-sm font-medium text-black">Prendre une photo</span>
+                        </button>
+                        <input
+                          id="camera-input"
+                          type="file"
+                          accept="image/*"
+                          capture
+                          onChange={handleImageUpload}
+                          disabled={uploadingImages}
+                          className="hidden"
+                        />
+                      </>
+                    )}
+                    {form.images.length === 0 && (
+                      <p className="text-xs text-black/50 text-center">Utilisez la caméra pour prendre des photos du produit</p>
+                    )}
                   </div>
-                ))}
-                {form.images.length < 5 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => document.getElementById('camera-input')?.click()}
-                      className="flex-1 flex items-center justify-center gap-2 px-4 py-4 border-2 border-dashed border-black/20 rounded-lg cursor-pointer hover:border-black/40 transition-colors bg-black/5"
-                    >
-                      <Camera className="h-5 w-5 text-black/60" />
-                      <span className="text-sm font-medium text-black">Prendre une photo</span>
-                    </button>
-                    <input
-                      id="camera-input"
-                      type="file"
-                      accept="image/*"
-                      capture
-                      onChange={handleImageUpload}
-                      disabled={uploadingImages}
-                      className="hidden"
-                    />
-                  </>
-                )}
-                {form.images.length === 0 && (
-                  <p className="text-xs text-black/50 text-center">Utilisez la caméra pour prendre des photos du produit</p>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Rating & Featured */}
-            <div>
-              <h3 className="font-semibold text-black mb-3">Options</h3>
+            {/* Step 3: Options */}
+            {currentStep === 3 && (
               <div className="space-y-4">
                 <AdminInput
                   label="Note"
@@ -570,26 +593,49 @@ export default function AdminProductsPage() {
                   <span className="text-sm font-medium text-black">Produit actif</span>
                 </label>
               </div>
-            </div>
+            )}
 
+            {/* Navigation Buttons */}
             <div className="mt-6 flex gap-3">
+              {currentStep > 1 && (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg border border-black/20 text-black hover:bg-black/5 font-medium transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Précédent
+                </button>
+              )}
               <button
                 onClick={handleClose}
                 className="flex-1 px-4 py-2 rounded-lg border border-black/20 text-black hover:bg-black/5 font-medium transition-colors"
               >
                 Annuler
               </button>
-              <AdminButton
-                onClick={() => saveMutation.mutate()}
-                loading={saveMutation.isPending}
-                className="flex-1"
-              >
-                {editing ? "Mettre à jour" : "Créer"}
-              </AdminButton>
+              {currentStep < TOTAL_STEPS ? (
+                <AdminButton
+                  onClick={nextStep}
+                  disabled={!canGoNext()}
+                  className="flex items-center gap-2"
+                >
+                  Suivant
+                  <ChevronRight className="h-4 w-4" />
+                </AdminButton>
+              ) : (
+                <AdminButton
+                  onClick={() => saveMutation.mutate()}
+                  loading={saveMutation.isPending}
+                  className="flex-1"
+                >
+                  {editing ? "Mettre à jour" : "Créer"}
+                </AdminButton>
+              )}
             </div>
           </div>
         </Modal>
       )}
+
       {deleteTarget && (
         <Modal
           open={Boolean(deleteTarget)}
